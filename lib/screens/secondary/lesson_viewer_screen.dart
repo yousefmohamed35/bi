@@ -4,18 +4,21 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:pod_player/pod_player.dart';
+import 'package:video_player/video_player.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/design/app_colors.dart';
-import '../../core/navigation/route_names.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../services/courses_service.dart';
 import '../../services/token_storage_service.dart';
 import '../../services/video_download_service.dart';
 import '../../services/youtube_video_service.dart';
+import '../../widgets/secure_video_player/dynamic_watermark_overlay.dart';
 
 /// Lesson Viewer Screen - Modern & Eye-Friendly Design
 class LessonViewerScreen extends StatefulWidget {
@@ -29,10 +32,17 @@ class LessonViewerScreen extends StatefulWidget {
 }
 
 class _LessonViewerScreenState extends State<LessonViewerScreen> {
+  static const List<String> _supportedVideoQualities = <String>[
+    'auto',
+    '1080p',
+    '720p',
+    '480p',
+    '360p',
+  ];
+
   PodPlayerController? _controller;
   WebViewController? _webViewController;
   bool _isVideoLoading = true;
-  bool _isLoadingContent = true;
   bool _useWebViewFallback = false;
   Map<String, dynamic>? _lessonContent;
   File? _tempVideoFile;
@@ -40,10 +50,21 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
   bool _isDownloading = false;
   int _downloadProgress = 0;
   bool _isDownloaded = false;
+  bool _isFileLessonWithoutVideo = false;
+  bool _isRecordLesson = false;
+  bool _isRecordPlayerLoading = false;
+  VideoPlayerController? _recordPlayerController;
+  StreamSubscription<DownloadTrackingState>? _downloadTrackingSubscription;
+  DynamicWatermarkData _videoWatermark = DynamicWatermarkData.fallback;
+  OverlayEntry? _fullscreenWatermarkEntry;
+  OverlayEntry? _fullscreenSeekEntry;
+  Timer? _fullscreenWatermarkMonitor;
 
   @override
   void initState() {
     super.initState();
+    _loadVideoWatermark();
+    _startFullscreenWatermarkMonitor();
     _initializeDownloadService();
     _loadLessonContent().then((_) {
       // Initialize video after content is loaded (or failed)
@@ -53,8 +74,114 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
     });
   }
 
+  Future<void> _loadVideoWatermark() async {
+    final user = await TokenStorageService.instance.getUserData();
+    if (!mounted) return;
+    setState(() {
+      _videoWatermark = DynamicWatermarkData.fromCachedUser(user);
+    });
+  }
+
+  void _startFullscreenWatermarkMonitor() {
+    _fullscreenWatermarkMonitor?.cancel();
+    _fullscreenWatermarkMonitor = Timer.periodic(
+      const Duration(milliseconds: 250),
+      (_) {
+        if (!mounted) return;
+        final isFullscreen = _controller?.isFullScreen ?? false;
+        if (isFullscreen) {
+          _showFullscreenWatermark();
+          _showFullscreenSeekOverlay();
+        } else {
+          _hideFullscreenWatermark();
+          _hideFullscreenSeekOverlay();
+        }
+      },
+    );
+  }
+
+  void _showFullscreenWatermark() {
+    if (_fullscreenWatermarkEntry != null || !mounted) return;
+    final overlay = Overlay.of(context, rootOverlay: true);
+    _fullscreenWatermarkEntry = OverlayEntry(
+      builder: (_) => Positioned.fill(
+        child: IgnorePointer(
+          child: DynamicWatermarkOverlay(data: _videoWatermark),
+        ),
+      ),
+    );
+    overlay.insert(_fullscreenWatermarkEntry!);
+  }
+
+  void _hideFullscreenWatermark() {
+    _fullscreenWatermarkEntry?.remove();
+    _fullscreenWatermarkEntry = null;
+  }
+
+  void _showFullscreenSeekOverlay() {
+    if (_fullscreenSeekEntry != null || !mounted) return;
+    final overlay = Overlay.of(context, rootOverlay: true);
+    _fullscreenSeekEntry = OverlayEntry(
+      builder: (_) => Positioned.fill(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onDoubleTapDown: _handlePodDoubleTap,
+        ),
+      ),
+    );
+    overlay.insert(_fullscreenSeekEntry!);
+  }
+
+  void _hideFullscreenSeekOverlay() {
+    _fullscreenSeekEntry?.remove();
+    _fullscreenSeekEntry = null;
+  }
+
   Future<void> _initializeDownloadService() async {
     await _downloadService.initialize();
+    _syncTrackedDownloadState();
+    _subscribeToTrackedDownload();
+  }
+
+  String? _currentLessonId() {
+    final lesson = widget.lesson;
+    if (lesson == null) return null;
+    final lessonId = lesson['id']?.toString();
+    if (lessonId == null || lessonId.isEmpty) return null;
+    return lessonId;
+  }
+
+  void _syncTrackedDownloadState() {
+    final lessonId = _currentLessonId();
+    if (lessonId == null) return;
+
+    final trackedState = _downloadService.getTrackedDownloadState(lessonId);
+    if (trackedState == null) return;
+
+    if (!mounted) return;
+    setState(() {
+      _isDownloading = trackedState.status == DownloadTrackingStatus.inProgress;
+      _downloadProgress = trackedState.progress;
+    });
+  }
+
+  void _subscribeToTrackedDownload() {
+    final lessonId = _currentLessonId();
+    if (lessonId == null) return;
+
+    _downloadTrackingSubscription?.cancel();
+    _downloadTrackingSubscription =
+        _downloadService.watchTrackedDownload(lessonId).listen((state) {
+      if (!mounted) return;
+
+      setState(() {
+        _downloadProgress = state.progress;
+        _isDownloading = state.status == DownloadTrackingStatus.inProgress;
+        if (state.status == DownloadTrackingStatus.completed) {
+          _isDownloaded = true;
+        }
+      });
+    });
   }
 
   Future<void> _checkIfDownloaded() async {
@@ -72,14 +199,29 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
     }
   }
 
+  Future<void> _seekPodBySeconds(int seconds) async {
+    final controller = _controller;
+    if (controller == null) return;
+
+    final current = controller.currentVideoPosition;
+    final duration = controller.totalVideoLength;
+    final target = current + Duration(seconds: seconds);
+    final clamped = target < Duration.zero
+        ? Duration.zero
+        : (target > duration ? duration : target);
+
+    await controller.videoSeekTo(clamped);
+  }
+
+  void _handlePodDoubleTap(TapDownDetails details) {
+    final width = MediaQueryData.fromView(View.of(context)).size.width;
+    final isLeftSide = details.globalPosition.dx < (width / 2);
+    _seekPodBySeconds(isLeftSide ? -10 : 10);
+  }
+
   Future<void> _loadLessonContent() async {
     final lesson = widget.lesson;
-    if (lesson == null) {
-      setState(() {
-        _isLoadingContent = false;
-      });
-      return;
-    }
+    if (lesson == null) return;
 
     // Get courseId from widget or extract from lesson
     String? courseId = widget.courseId;
@@ -94,9 +236,6 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
         courseId.isEmpty ||
         lessonId == null ||
         lessonId.isEmpty) {
-      setState(() {
-        _isLoadingContent = false;
-      });
       return;
     }
 
@@ -109,17 +248,11 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
       if (mounted) {
         setState(() {
           _lessonContent = content;
-          _isLoadingContent = false;
         });
       }
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error loading lesson content: $e');
-      }
-      if (mounted) {
-        setState(() {
-          _isLoadingContent = false;
-        });
       }
     }
   }
@@ -159,6 +292,74 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
     return url.trim();
   }
 
+  String? _normalizeQualityKey(String? quality) {
+    final value = quality?.trim().toLowerCase();
+    if (value == null || value.isEmpty) return null;
+    return _supportedVideoQualities.contains(value) ? value : null;
+  }
+
+  Map<String, String> _extractVideoQualities(dynamic source) {
+    final out = <String, String>{};
+    if (source is! Map) return out;
+
+    final rawQualities = source['video_qualities'];
+    if (rawQualities is! Map) return out;
+
+    rawQualities.forEach((key, value) {
+      final quality = _normalizeQualityKey(key?.toString());
+      final url = _cleanVideoUrl(value?.toString());
+      if (quality != null && url != null && url.isNotEmpty) {
+        out[quality] = url;
+      }
+    });
+    return out;
+  }
+
+  String? _resolvePreferredVideoUrl(Map<String, dynamic> lesson) {
+    final qualityUrls = <String, String>{};
+    qualityUrls.addAll(_extractVideoQualities(lesson));
+    qualityUrls.addAll(_extractVideoQualities(lesson['video']));
+
+    final options = <String>{};
+    final topLevelOptions = lesson['quality_options'];
+    if (topLevelOptions is List) {
+      for (final option in topLevelOptions) {
+        final normalized = _normalizeQualityKey(option?.toString());
+        if (normalized != null) options.add(normalized);
+      }
+    }
+
+    final fallbackVideoUrl = _cleanVideoUrl(lesson['video_url']?.toString()) ??
+        _cleanVideoUrl(lesson['video']?['url']?.toString());
+    if (fallbackVideoUrl != null && fallbackVideoUrl.isNotEmpty) {
+      qualityUrls.putIfAbsent('auto', () => fallbackVideoUrl);
+    }
+
+    String? selectedQuality = _normalizeQualityKey(
+      lesson['default_quality']?.toString(),
+    );
+    if (selectedQuality == null) {
+      selectedQuality = options.contains('auto') ? 'auto' : null;
+    }
+
+    if (selectedQuality != null && qualityUrls[selectedQuality] != null) {
+      return qualityUrls[selectedQuality];
+    }
+
+    for (final quality in _supportedVideoQualities) {
+      if (options.isNotEmpty && !options.contains(quality)) continue;
+      final url = qualityUrls[quality];
+      if (url != null && url.isNotEmpty) return url;
+    }
+
+    for (final quality in _supportedVideoQualities) {
+      final url = qualityUrls[quality];
+      if (url != null && url.isNotEmpty) return url;
+    }
+
+    return fallbackVideoUrl;
+  }
+
   Future<void> _initializeVideo() async {
     final lesson = widget.lesson;
     if (lesson == null) {
@@ -168,14 +369,17 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
 
     // Wait for content to load, then use it for video
     // If content is already loaded, use it; otherwise use lesson data
-    final videoData = _lessonContent?['video'] ?? lesson['video'];
+    final mergedLesson = _lessonMapMergedWithContent(lesson, _lessonContent);
+    final videoData = mergedLesson['video'];
 
     // Extract video ID from lesson content or lesson - try all possible fields
     String? videoId;
     String? videoUrl;
+    final lessonType = mergedLesson['type']?.toString().toLowerCase();
+    final recordUrl = _resolveRecordUrl(mergedLesson);
 
-    // 1. Try video_url field directly from lesson (highest priority)
-    videoUrl = _cleanVideoUrl(lesson['video_url']?.toString());
+    // 1. Contract-first quality-aware URL resolution.
+    videoUrl = _resolvePreferredVideoUrl(mergedLesson);
 
     // 2. Try video object with youtube_id from content
     if (videoUrl == null && videoData is Map) {
@@ -195,12 +399,37 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
     // 5. Try youtubeVideoId field
     videoId = videoId ?? lesson['youtubeVideoId']?.toString();
 
-    // 6. If no video object, use lesson id as video id
-    if (videoId == null || videoId.isEmpty) {
-      videoId = lesson['id']?.toString();
+    // Never use lesson ID as a YouTube fallback.
+    videoId = (videoId ?? '').trim();
+
+    if ((lessonType == 'record' ||
+            lessonType == 'audio' ||
+            lessonType == 'podcast' ||
+            lessonType == 'sound') &&
+        recordUrl != null &&
+        recordUrl.isNotEmpty) {
+      await _initializeRecord(recordUrl);
+      return;
     }
 
-    videoId = videoId ?? '';
+    if (videoUrl == null &&
+        videoId.isEmpty &&
+        (lessonType == 'file' ||
+            lessonType == 'pdf' ||
+            lessonType == 'material')) {
+      if (kDebugMode) {
+        print(
+            '📄 File lesson without video source. Skipping video initialization.');
+      }
+      if (mounted) {
+        setState(() {
+          _isFileLessonWithoutVideo = true;
+          _isRecordLesson = false;
+          _isVideoLoading = false;
+        });
+      }
+      return;
+    }
 
     if (kDebugMode) {
       print('═══════════════════════════════════════════════════════════');
@@ -208,6 +437,7 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
       print('═══════════════════════════════════════════════════════════');
       print('Video ID: $videoId');
       print('Video URL (cleaned): $videoUrl');
+      print('Record URL: $recordUrl');
       print('Lesson ID: ${lesson['id']}');
       print('Lesson Title: ${lesson['title']}');
       print('Video Object: $videoData');
@@ -279,7 +509,10 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
           print('⚠️ No valid video source found');
         }
         if (mounted) {
-          setState(() => _isVideoLoading = false);
+          setState(() {
+            _isRecordLesson = false;
+            _isVideoLoading = false;
+          });
         }
       }
     } catch (e) {
@@ -287,9 +520,97 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
         print('❌ Error initializing video: $e');
       }
       if (mounted) {
-        setState(() => _isVideoLoading = false);
+        setState(() {
+          _isRecordLesson = false;
+          _isVideoLoading = false;
+        });
       }
     }
+  }
+
+  Map<String, dynamic> _lessonMapMergedWithContent(
+    Map<String, dynamic> lesson,
+    Map<String, dynamic>? content,
+  ) {
+    if (content == null || content.isEmpty) return lesson;
+    final out = Map<String, dynamic>.from(lesson);
+    content.forEach((key, value) {
+      if (value != null) out[key] = value;
+    });
+    return out;
+  }
+
+  String? _resolveRecordUrl(Map<String, dynamic> lesson) {
+    for (final key in const [
+      'audio_url',
+      'record_url',
+      'sound_url',
+      'audio',
+      'recording_url',
+      'voice_url',
+      'media_url',
+      'file',
+      'file_url',
+      'url',
+    ]) {
+      final value = lesson[key];
+      if (value == null) continue;
+      if (value is String) {
+        final cleaned = _cleanVideoUrl(value);
+        if (cleaned != null && cleaned.isNotEmpty) return cleaned;
+      } else if (value is Map) {
+        final cleaned = _cleanVideoUrl(value['url']?.toString());
+        if (cleaned != null && cleaned.isNotEmpty) return cleaned;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _initializeRecord(String recordUrl) async {
+    _recordPlayerController?.dispose();
+    _recordPlayerController = null;
+
+    if (mounted) {
+      setState(() {
+        _isRecordLesson = true;
+        _isRecordPlayerLoading = true;
+        _isFileLessonWithoutVideo = false;
+      });
+    }
+
+    try {
+      final controller = VideoPlayerController.networkUrl(Uri.parse(recordUrl));
+      await controller.initialize();
+      await controller.setLooping(false);
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() {
+        _recordPlayerController = controller;
+        _isRecordPlayerLoading = false;
+        _isVideoLoading = false;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error initializing record player: $e');
+      }
+      if (!mounted) return;
+      setState(() {
+        _recordPlayerController = null;
+        _isRecordPlayerLoading = false;
+        _isVideoLoading = false;
+      });
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60);
+    final s = d.inSeconds.remainder(60);
+    if (h > 0) return '${two(h)}:${two(m)}:${two(s)}';
+    return '${two(m)}:${two(s)}';
   }
 
   /// Initialize direct video playback using pod_player
@@ -788,7 +1109,12 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
 
   @override
   void dispose() {
+    _fullscreenWatermarkMonitor?.cancel();
+    _hideFullscreenWatermark();
+    _hideFullscreenSeekOverlay();
+    _downloadTrackingSubscription?.cancel();
     _controller?.dispose();
+    _recordPlayerController?.dispose();
     // Clean up temporary video file
     if (_tempVideoFile != null) {
       try {
@@ -919,38 +1245,189 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
                       ),
                     ),
                   )
-                : _controller != null
-                    ? PodVideoPlayer(
-                        controller: _controller!,
-                        videoAspectRatio: 16 / 9,
-                        podProgressBarConfig: const PodProgressBarConfig(
-                          playingBarColor: AppColors.primaryMap,
-                          circleHandlerColor: AppColors.primaryMap,
-                          bufferedBarColor: Colors.white30,
+                : _isFileLessonWithoutVideo
+                    ? Container(
+                        color: Colors.black,
+                        child: Center(
+                          child: Text(
+                            context.l10n.lessonIsFile,
+                            style: GoogleFonts.cairo(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       )
-                    : _useWebViewFallback && _webViewController != null
-                        ? WebViewWidget(controller: _webViewController!)
-                        : Container(
+                    : _isRecordLesson
+                        ? Container(
                             color: Colors.black,
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _isRecordPlayerLoading || _isVideoLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.primaryMap,
+                                    ),
+                                  )
+                                : _recordPlayerController == null
+                                    ? Center(
+                                        child: Text(
+                                          context.l10n.unableToLoadRecord,
+                                          style: GoogleFonts.cairo(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      )
+                                    : AnimatedBuilder(
+                                        animation: _recordPlayerController!,
+                                        builder: (_, __) {
+                                          final c = _recordPlayerController!;
+                                          final duration = c.value.duration;
+                                          final position =
+                                              c.value.position > duration
+                                                  ? duration
+                                                  : c.value.position;
+                                          return Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  IconButton(
+                                                    onPressed: () {
+                                                      if (c.value.isPlaying) {
+                                                        c.pause();
+                                                      } else {
+                                                        c.play();
+                                                      }
+                                                    },
+                                                    icon: Icon(
+                                                      c.value.isPlaying
+                                                          ? Icons.pause_circle
+                                                          : Icons.play_circle,
+                                                      color:
+                                                          AppColors.primaryMap,
+                                                      size: 44,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              Slider(
+                                                value: duration
+                                                            .inMilliseconds ==
+                                                        0
+                                                    ? 0
+                                                    : position.inMilliseconds
+                                                        .clamp(
+                                                          0,
+                                                          duration
+                                                              .inMilliseconds,
+                                                        )
+                                                        .toDouble(),
+                                                min: 0,
+                                                max: duration.inMilliseconds ==
+                                                        0
+                                                    ? 1
+                                                    : duration.inMilliseconds
+                                                        .toDouble(),
+                                                onChanged: (value) {
+                                                  c.seekTo(
+                                                    Duration(
+                                                      milliseconds:
+                                                          value.toInt(),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    _formatDuration(position),
+                                                    style: GoogleFonts.cairo(
+                                                      color: Colors.white70,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    _formatDuration(duration),
+                                                    style: GoogleFonts.cairo(
+                                                      color: Colors.white70,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                          )
+                        : _controller != null
+                            ? Stack(
+                                fit: StackFit.expand,
                                 children: [
-                                  const Icon(Icons.error_outline,
-                                      color: Colors.white54, size: 48),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'لا يمكن تحميل الفيديو',
-                                    style: GoogleFonts.cairo(
-                                      color: Colors.white54,
-                                      fontSize: 14,
+                                  PodVideoPlayer(
+                                    controller: _controller!,
+                                    videoAspectRatio: 16 / 9,
+                                    podProgressBarConfig:
+                                        const PodProgressBarConfig(
+                                      playingBarColor: AppColors.primaryMap,
+                                      circleHandlerColor: AppColors.primaryMap,
+                                      bufferedBarColor: Colors.white30,
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: DynamicWatermarkOverlay(
+                                      data: _videoWatermark,
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: GestureDetector(
+                                      behavior: HitTestBehavior.translucent,
+                                      onDoubleTapDown: _handlePodDoubleTap,
                                     ),
                                   ),
                                 ],
-                              ),
-                            ),
-                          ),
+                              )
+                            : _useWebViewFallback && _webViewController != null
+                                ? Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      WebViewWidget(
+                                          controller: _webViewController!),
+                                      Positioned.fill(
+                                        child: DynamicWatermarkOverlay(
+                                          data: _videoWatermark,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Container(
+                                    color: Colors.black,
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.error_outline,
+                                              color: Colors.white54, size: 48),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'لا يمكن تحميل الفيديو',
+                                            style: GoogleFonts.cairo(
+                                              color: Colors.white54,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
           ),
         ],
       ),
@@ -1006,68 +1483,6 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Description Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryMap.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.description_rounded,
-                            color: AppColors.primaryMap, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'وصف الدرس',
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _isLoadingContent
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: CircularProgressIndicator(
-                              color: AppColors.primaryMap,
-                            ),
-                          ),
-                        )
-                      : Text(
-                          _lessonContent?['description'] as String? ??
-                              'لا يوجد وصف متاح',
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                            height: 1.7,
-                          ),
-                        ),
-                ],
-              ),
-            ),
             const SizedBox(height: 20),
 
             // Download Card
@@ -1112,6 +1527,7 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
                   const SizedBox(height: 16),
                   if (_isDownloading)
                     Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         LinearProgressIndicator(
                           value: _downloadProgress / 100,
@@ -1127,6 +1543,21 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
                             fontSize: 14,
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _cancelDownload,
+                          icon: const Icon(Icons.stop_circle_outlined),
+                          label: Text(
+                            'إيقاف التحميل',
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.redAccent,
+                            side: const BorderSide(color: Colors.redAccent),
                           ),
                         ),
                       ],
@@ -1181,59 +1612,6 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Resources Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.folder_rounded,
-                            color: Colors.orange, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'ملفات الدرس',
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _isLoadingContent
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: CircularProgressIndicator(
-                              color: AppColors.primaryMap,
-                            ),
-                          ),
-                        )
-                      : _buildResourcesList(),
-                ],
-              ),
-            ),
             const SizedBox(height: 24),
 
             // Navigation Buttons
@@ -1297,101 +1675,15 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
     );
   }
 
-  Widget _buildResourcesList() {
-    final resources = _lessonContent?['resources'] as List?;
-    final contentPdf = _lessonContent?['content_pdf'] as String?;
-
-    // Build list of resources
-    final List<Map<String, dynamic>> resourceList = [];
-
-    // Add PDF if available
-    if (contentPdf != null && contentPdf.isNotEmpty) {
-      resourceList.add({
-        'title': 'ملف PDF - ملخص الدرس',
-        'url': contentPdf,
-        'type': 'pdf',
-        'icon': Icons.picture_as_pdf,
-      });
-    }
-
-    // Add resources from API
-    if (resources != null && resources.isNotEmpty) {
-      for (var resource in resources) {
-        if (resource is Map<String, dynamic>) {
-          final title = resource['title']?.toString() ??
-              resource['name']?.toString() ??
-              'ملف مرفق';
-          final url =
-              resource['url']?.toString() ?? resource['file']?.toString() ?? '';
-          final type = (resource['type']?.toString() ??
-                  resource['file_type']?.toString() ??
-                  '')
-              .toLowerCase();
-
-          IconData icon = Icons.insert_drive_file;
-          if (type.contains('pdf')) {
-            icon = Icons.picture_as_pdf;
-          } else if (type.contains('zip') || type.contains('rar')) {
-            icon = Icons.folder_zip;
-          } else if (type.contains('image')) {
-            icon = Icons.image;
-          } else if (type.contains('video')) {
-            icon = Icons.video_file;
-          }
-
-          resourceList.add({
-            'title': title,
-            'url': url,
-            'type': type,
-            'icon': icon,
-            'size': resource['size']?.toString() ?? '',
-          });
-        }
-      }
-    }
-
-    if (resourceList.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Center(
-          child: Text(
-            'لا توجد ملفات متاحة',
-            style: GoogleFonts.cairo(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: resourceList.asMap().entries.map((entry) {
-        final index = entry.key;
-        final resource = entry.value;
-        return Column(
-          children: [
-            _buildResourceItem(
-              resource['title'] as String,
-              resource['size'] as String? ?? '',
-              resource['icon'] as IconData,
-              resource['url'] as String? ?? '',
-            ),
-            if (index < resourceList.length - 1) const SizedBox(height: 10),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
   Future<void> _handleDownload() async {
     final lesson = widget.lesson;
     if (lesson == null) return;
 
     final lessonId = lesson['id']?.toString();
     final courseId = widget.courseId ?? lesson['course_id']?.toString();
-    final title = lesson['title']?.toString() ?? 'فيديو';
-    final description = lesson['description']?.toString() ?? '';
+    final title = context.localizedApiText(lesson, 'title',
+        fallback: context.l10n.lesson);
+    final description = context.localizedApiText(lesson, 'description');
 
     if (lessonId == null || courseId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1408,12 +1700,9 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
 
     // التحميل يُحفظ داخل مجلد التطبيق فقط — لا حاجة لصلاحية التخزين المشترك (Android 13+).
 
-    // الحصول على رابط الفيديو (نفس منطق التشغيل، مع تنظيف الرابط)
-    String? rawVideoUrl = _lessonContent?['video']?['url']?.toString() ??
-        lesson['video_url']?.toString() ??
-        lesson['video']?['url']?.toString();
-
-    final videoUrl = _cleanVideoUrl(rawVideoUrl);
+    // Use the same contract-first quality selection logic used in playback.
+    final mergedLesson = _lessonMapMergedWithContent(lesson, _lessonContent);
+    final videoUrl = _resolvePreferredVideoUrl(mergedLesson);
 
     if (videoUrl == null || videoUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1428,10 +1717,20 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
       return;
     }
 
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress = 0;
-    });
+    final cancelToken = CancelToken();
+    _downloadService.startTrackingDownload(
+      lessonId: lessonId,
+      onCancel: () async {
+        cancelToken.cancel('user_cancelled_download');
+      },
+    );
+    if (mounted) {
+      setState(() {
+        _isDownloading = true;
+        _downloadProgress = 0;
+        _isDownloaded = false;
+      });
+    }
 
     try {
       // الحصول على عنوان الكورس
@@ -1439,7 +1738,7 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
       try {
         final courseDetails =
             await CoursesService.instance.getCourseDetails(courseId);
-        courseTitle = courseDetails['title']?.toString();
+        courseTitle = context.localizedApiText(courseDetails, 'title');
       } catch (e) {
         print('Error getting course title: $e');
       }
@@ -1457,7 +1756,9 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
             await YoutubeVideoService.instance.downloadYoutubeVideo(
           videoUrl,
           fileName: fileName,
+          cancelToken: cancelToken,
           onProgress: (progress) {
+            _downloadService.updateTrackedDownloadProgress(lessonId, progress);
             if (mounted) {
               setState(() => _downloadProgress = progress);
             }
@@ -1483,6 +1784,8 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
             log('YouTube video saved to database: $videoId');
           }
 
+          _downloadService.completeTrackedDownload(lessonId);
+
           if (mounted) {
             setState(() {
               _isDownloading = false;
@@ -1501,6 +1804,7 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
             );
           }
         } else {
+          _downloadService.failTrackedDownload(lessonId);
           if (mounted) {
             setState(() {
               _isDownloading = false;
@@ -1527,7 +1831,9 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
         title: title,
         courseTitle: courseTitle,
         description: description,
+        cancelToken: cancelToken,
         onProgress: (progress) {
+          _downloadService.updateTrackedDownloadProgress(lessonId, progress);
           if (mounted) {
             setState(() {
               _downloadProgress = progress;
@@ -1537,6 +1843,7 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
       );
 
       if (videoId != null) {
+        _downloadService.completeTrackedDownload(lessonId);
         if (mounted) {
           setState(() {
             _isDownloading = false;
@@ -1555,9 +1862,22 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
           );
         }
       } else {
+        _downloadService.failTrackedDownload(lessonId);
         throw Exception('فشل تحميل الفيديو');
       }
     } catch (e) {
+      final isCancelled = e is DioException && CancelToken.isCancel(e);
+      if (isCancelled) {
+        if (mounted) {
+          setState(() {
+            _isDownloading = false;
+            _downloadProgress = 0;
+          });
+        }
+        return;
+      }
+
+      _downloadService.failTrackedDownload(lessonId);
       if (mounted) {
         setState(() {
           _isDownloading = false;
@@ -1577,92 +1897,25 @@ class _LessonViewerScreenState extends State<LessonViewerScreen> {
     }
   }
 
-  Widget _buildResourceItem(
-      String title, String size, IconData icon, String url) {
-    // Check if the resource is a PDF
-    final isPdf = url.toLowerCase().contains('.pdf') ||
-        title.toLowerCase().contains('pdf') ||
-        icon == Icons.picture_as_pdf;
+  Future<void> _cancelDownload() async {
+    final lessonId = _currentLessonId();
+    if (lessonId == null) return;
 
-    return GestureDetector(
-      onTap: url.isNotEmpty
-          ? () {
-              if (kDebugMode) {
-                print('Opening resource: $url');
-              }
+    await _downloadService.cancelTrackedDownload(lessonId);
 
-              if (isPdf) {
-                // Open PDF in viewer screen
-                context.push(
-                  RouteNames.pdfViewer,
-                  extra: {
-                    'pdfUrl': url,
-                    'title': title,
-                  },
-                );
-              } else {
-                // For non-PDF files, you can implement download or other actions
-                if (kDebugMode) {
-                  print('Non-PDF file: $url');
-                }
-              }
-            }
-          : null,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
+    if (!mounted) return;
+    setState(() {
+      _isDownloading = false;
+      _downloadProgress = 0;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'تم إيقاف التحميل',
+          style: GoogleFonts.cairo(),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: Colors.red, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.cairo(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface),
-                  ),
-                  if (size.isNotEmpty)
-                    Text(
-                      size,
-                      style: GoogleFonts.cairo(
-                          fontSize: 11,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isPdf
-                    ? AppColors.primaryMap.withOpacity(0.1)
-                    : AppColors.primaryMap.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                isPdf ? Icons.preview_rounded : Icons.download_rounded,
-                color: AppColors.primaryMap,
-                size: 18,
-              ),
-            ),
-          ],
-        ),
+        backgroundColor: Colors.orange,
       ),
     );
   }

@@ -10,6 +10,32 @@ class DynamicWatermarkData {
     required this.username,
     required this.identifier,
   });
+
+  static const DynamicWatermarkData fallback = DynamicWatermarkData(
+    username: 'مشترك',
+    identifier: '—',
+  );
+
+  /// Builds watermark text from [TokenStorageService] / login payload shape.
+  static DynamicWatermarkData fromCachedUser(Map<String, dynamic>? user) {
+    if (user == null || user.isEmpty) return fallback;
+
+    String? s(dynamic v) {
+      if (v == null) return null;
+      final t = v.toString().trim();
+      return t.isEmpty ? null : t;
+    }
+
+    final name = s(user['name']) ?? s(user['nameAr']);
+    final email = s(user['email']);
+    final phone = s(user['phone']);
+    final nationalId = s(user['nationalId']) ?? s(user['national_id']);
+
+    final username = name ?? email ?? fallback.username;
+    final identifier = phone ?? nationalId ?? email ?? fallback.identifier;
+
+    return DynamicWatermarkData(username: username, identifier: identifier);
+  }
 }
 
 /// A moving watermark overlay that stays visible above the video
@@ -53,7 +79,7 @@ class _DynamicWatermarkOverlayState extends State<DynamicWatermarkOverlay>
     _controller = AnimationController(
       vsync: this,
       // Continuous movement; pick a new target every cycle.
-      duration: const Duration(milliseconds: 2600),
+      duration: const Duration(milliseconds: 12000),
     );
     _t = CurvedAnimation(parent: _controller, curve: Curves.linear);
 
@@ -65,7 +91,7 @@ class _DynamicWatermarkOverlayState extends State<DynamicWatermarkOverlay>
         // Subtle variation per cycle (but always moving).
         _opacity = 0.14 + (_rand.nextDouble() * 0.10); // 0.14–0.24
         _rotation = (_rand.nextDouble() - 0.5) * 0.10; // ~ -6° .. +6°
-        _scale = 0.95 + (_rand.nextDouble() * 0.15); // 0.95–1.10
+        _scale = 0.90 + (_rand.nextDouble() * 0.10); // 0.90–1.00
 
         _controller.forward(from: 0);
       }
@@ -145,17 +171,17 @@ class _WatermarkChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.black,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.25), width: 1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.8),
       ),
       child: Text(
         text,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
         ),

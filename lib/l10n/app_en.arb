@@ -1019,6 +1019,14 @@
   "@reviewSubmittedSuccessfully": {
     "description": "Shown when a course review is submitted"
   },
+  "errorLoadingReviews": "Error loading reviews",
+  "@errorLoadingReviews": {
+    "description": "Shown when course reviews fail to load"
+  },
+  "errorSubmittingReview": "Error submitting review",
+  "@errorSubmittingReview": {
+    "description": "Shown when submitting a course review fails"
+  },
   "lifetimeAccess": "Lifetime access to content",
   "@lifetimeAccess": {
     "description": "Course feature label"
@@ -1106,6 +1114,10 @@
   "pointsLabel": "points",
   "@pointsLabel": {
     "description": "Points unit label"
+  },
+  "totalPointsLabel": "Total points",
+  "@totalPointsLabel": {
+    "description": "Total points label"
   },
   "bestScore": "Best score: {score}%",
   "@bestScore": {
@@ -1217,6 +1229,10 @@
   "noQuestionsAvailable": "No questions available in exam",
   "@noQuestionsAvailable": {
     "description": "No questions available"
+  },
+  "attemptIdMissing": "Attempt ID is missing",
+  "@attemptIdMissing": {
+    "description": "Error when exam attempt identifier is not available"
   },
   "finishExamButton": "Finish Exam",
   "@finishExamButton": {
@@ -1486,13 +1502,13 @@
   "@subscribeNowButton": {
     "description": "Subscribe Now"
   },
-  "enrolledCourse": "Enrolled Course",
+  "enrolledCourse": "Course",
   "@enrolledCourse": {
-    "description": "Enrolled Course"
+    "description": "Course"
   },
-  "learningHours": "Learning Hours",
+  "learningHours": "Hours",
   "@learningHours": {
-    "description": "Learning Hours"
+    "description": "Hours"
   },
   "continueLearning": "Continue Learning",
   "@continueLearning": {
@@ -2135,13 +2151,13 @@
   "@verificationLinkLabel": {
     "description": "Verification Link"
   },
-  "centerAttendance": "Center Attendance",
+  "centerAttendance": "Attendance",
   "@centerAttendance": {
-    "description": "Center Attendance"
+    "description": "Attendance"
   },
-  "centerAttendanceDescription": "Show this QR code at the center to mark your attendance",
+  "centerAttendanceDescription": "Show this QR code to mark your attendance",
   "@centerAttendanceDescription": {
-    "description": "Center attendance description"
+    "description": " attendance description"
   },
   "loadingQrCode": "Loading QR code...",
   "@loadingQrCode": {
@@ -2151,7 +2167,7 @@
   "@errorLoadingQrCode": {
     "description": "Error loading QR code"
   },
-  "scanQrCodeInstruction": "Show this QR code to the center staff to mark your attendance",
+  "scanQrCodeInstruction": "Show this QR code to mark your attendance",
   "@scanQrCodeInstruction": {
     "description": "Scan QR code instruction"
   },
@@ -2200,6 +2216,125 @@
         "type": "int"
       }
     }
+  },
+  "unableToLoadRecord": "Unable to load recording",
+  "@unableToLoadRecord": {
+    "description": "Course audio record player empty state"
+  },
+  "courseLessonsSectionVideos": "Videos",
+  "@courseLessonsSectionVideos": {
+    "description": "Course details accordion: video lessons subsection"
+  },
+  "courseLessonsSectionPdfs": "PDFs",
+  "@courseLessonsSectionPdfs": {
+    "description": "Course details accordion: PDF lessons subsection"
+  },
+  "courseLessonsSectionExams": "Exams",
+  "@courseLessonsSectionExams": {
+    "description": "Course details accordion: exam lessons subsection"
+  },
+  "courseLessonsSectionImages": "Images",
+  "@courseLessonsSectionImages": {
+    "description": "Course details accordion: image lessons subsection"
+  },
+  "courseLessonsSectionRecords": "Recordings",
+  "@courseLessonsSectionRecords": {
+    "description": "Course details accordion: audio record lessons subsection"
+  },
+  "fallbackLessonImageTitle": "Image",
+  "@fallbackLessonImageTitle": {
+    "description": "Fallback title when lesson has no image title"
+  },
+  "fallbackLessonRecordTitle": "Recording",
+  "@fallbackLessonRecordTitle": {
+    "description": "Fallback title when lesson has no audio title"
+  },
+  "fallbackImagesGalleryTitle": "Images",
+  "@fallbackImagesGalleryTitle": {
+    "description": "Fallback gallery title for image lessons"
+  },
+  "noVideoQualityOptions": "No video quality options available",
+  "@noVideoQualityOptions": {
+    "description": "SnackBar when stream has no quality variants"
+  },
+  "onlyAutoQualityAvailable": "Only automatic quality is available for this video",
+  "@onlyAutoQualityAvailable": {
+    "description": "SnackBar when only auto quality exists"
+  },
+  "videoQualitySheetTitle": "Video quality",
+  "@videoQualitySheetTitle": {
+    "description": "Bottom sheet title for quality picker"
+  },
+  "videoQualityAuto": "Auto",
+  "@videoQualityAuto": {
+    "description": "Automatic video quality option label"
+  },
+  "cannotDownloadVideoMissingIds": "Cannot download this video",
+  "@cannotDownloadVideoMissingIds": {
+    "description": "Download error when lesson or course id missing"
+  },
+  "noVideoDownloadUrl": "No video link available to download",
+  "@noVideoDownloadUrl": {
+    "description": "Download error when URL missing"
+  },
+  "videoDownloadedSuccessfully": "Video downloaded successfully",
+  "@videoDownloadedSuccessfully": {
+    "description": "Successful offline video download"
+  },
+  "videoDownloadFailed": "Failed to download video",
+  "@videoDownloadFailed": {
+    "description": "Generic video download failure"
+  },
+  "videoDownloadError": "Error downloading video: {message}",
+  "@videoDownloadError": {
+    "description": "Video download error with server or system message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "videoDownloadStopped": "Download stopped",
+  "@videoDownloadStopped": {
+    "description": "User cancelled an active download"
+  },
+  "defaultVideoLessonTitle": "Video",
+  "@defaultVideoLessonTitle": {
+    "description": "Fallback title for a video lesson"
+  },
+  "defaultCourseTitleWithId": "Course {courseId}",
+  "@defaultCourseTitleWithId": {
+    "description": "Fallback course title when API title missing",
+    "placeholders": {
+      "courseId": {
+        "type": "String"
+      }
+    }
+  },
+  "videoPlayerLoadError": "Unable to load video",
+  "@videoPlayerLoadError": {
+    "description": "Inline player error state"
+  },
+  "downloadProgressPercent": "Downloading: {percent}%",
+  "@downloadProgressPercent": {
+    "description": "Download progress overlay",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "stopDownloading": "Stop",
+  "@stopDownloading": {
+    "description": "Cancel an in-progress download"
+  },
+  "noImageForLesson": "No image available for this lesson",
+  "@noImageForLesson": {
+    "description": "SnackBar when image lesson has no URL"
+  },
+  "noRecordForLesson": "No recording available for this lesson",
+  "@noRecordForLesson": {
+    "description": "SnackBar when audio lesson has no URL"
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../widgets/instructor_bottom_nav.dart';
 
@@ -512,7 +513,11 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _profile?['name']?.toString() ?? l10n.instructor,
+                  context.localizedApiText(
+                    _profile,
+                    'name',
+                    fallback: l10n.instructor,
+                  ),
                   style: GoogleFonts.cairo(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

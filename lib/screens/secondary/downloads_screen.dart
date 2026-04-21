@@ -23,9 +23,6 @@ class DownloadsScreen extends StatefulWidget {
 class _DownloadsScreenState extends State<DownloadsScreen> {
   bool _isLoading = true;
   List<DownloadedVideoModel> _downloadedVideos = [];
-  double _storageUsedMB = 0;
-  double _storageLimitMB = 500;
-  double _storagePercentage = 0;
   final VideoDownloadService _downloadService = VideoDownloadService();
 
   @override
@@ -59,10 +56,6 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
 
       setState(() {
         _downloadedVideos = videos;
-        _storageUsedMB = totalSize;
-        _storageLimitMB = 500; // يمكن جلبها من API لاحقاً
-        _storagePercentage =
-            (_storageLimitMB > 0) ? (totalSize / _storageLimitMB * 100) : 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -71,9 +64,6 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       }
       setState(() {
         _downloadedVideos = [];
-        _storageUsedMB = 0;
-        _storageLimitMB = 500;
-        _storagePercentage = 0;
         _isLoading = false;
       });
     }
@@ -92,224 +82,102 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
     return Scaffold(
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            // Header - Purple gradient like Home
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Header - Purple gradient like Home
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(AppRadius.largeCard),
+                    bottomRight: Radius.circular(AppRadius.largeCard),
+                  ),
                 ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(AppRadius.largeCard),
-                  bottomRight: Radius.circular(AppRadius.largeCard),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 16, // pt-4
+                  bottom: 32, // pb-8
+                  left: 16, // px-4
+                  right: 16,
                 ),
-              ),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 16, // pt-4
-                bottom: 32, // pb-8
-                left: 16, // px-4
-                right: 16,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Back button and title - matches React: gap-4 mb-4
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: Container(
-                          width: 40, // w-10
-                          height: 40, // h-10
-                          decoration: const BoxDecoration(
-                            color: AppColors.whiteOverlay20, // bg-white/20
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chevron_right,
-                            color: Colors.white,
-                            size: 20, // w-5 h-5
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Back button and title - matches React: gap-4 mb-4
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: Container(
+                            width: 40, // w-10
+                            height: 40, // h-10
+                            decoration: const BoxDecoration(
+                              color: AppColors.whiteOverlay20, // bg-white/20
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right,
+                              color: Colors.white,
+                              size: 20, // w-5 h-5
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16), // gap-4
-                      Text(
-                        context.l10n.downloads,
-                        style: AppTextStyles.h3(color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16), // mb-4
-                  // Download count - matches React: gap-2
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.download,
-                        size: 20, // w-5 h-5
-                        color: Colors.white.withOpacity(0.7), // white/70
-                      ),
-                      const SizedBox(width: 8), // gap-2
-                      Text(
-                        context.l10n.downloadedFiles(_downloadedVideos.length),
-                        style: AppTextStyles.bodyMedium(
+                        const SizedBox(width: 16), // gap-4
+                        Text(
+                          context.l10n.downloads,
+                          style: AppTextStyles.h3(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16), // mb-4
+                    // Download count - matches React: gap-2
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.download,
+                          size: 20, // w-5 h-5
                           color: Colors.white.withOpacity(0.7), // white/70
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Content - matches React: px-4 -mt-4 space-y-4
-            Expanded(
-              child: Transform.translate(
-                offset: const Offset(0, -16), // -mt-4
-                child: _isLoading
-                    ? _buildLoadingState(context)
-                    : RefreshIndicator(
-                        onRefresh: _loadDownloads,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16), // px-4
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: Column(
-                            children: [
-                              // Storage Card - matches React: bg-white rounded-3xl p-5 shadow-lg
-                              _buildStorageCard(context),
-
-                              // Downloaded Videos List
-                              if (_downloadedVideos.isEmpty)
-                                _buildEmptyState()
-                              else
-                                ..._downloadedVideos
-                                    .asMap()
-                                    .entries
-                                    .map((entry) {
-                                  final index = entry.key;
-                                  final video = entry.value;
-                                  return TweenAnimationBuilder<double>(
-                                    tween: Tween(begin: 0.0, end: 1.0),
-                                    duration: Duration(
-                                        milliseconds: 400 + (index * 100)),
-                                    curve: Curves.easeOut,
-                                    builder: (context, value, child) {
-                                      return Transform.translate(
-                                        offset: Offset(0, 20 * (1 - value)),
-                                        child: Opacity(
-                                          opacity: value,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: _buildVideoCard(context, video),
-                                  );
-                                }),
-
-                              const SizedBox(height: 32),
-                            ],
+                        const SizedBox(width: 8), // gap-2
+                        Text(
+                          context.l10n
+                              .downloadedFiles(_downloadedVideos.length),
+                          style: AppTextStyles.bodyMedium(
+                            color: Colors.white.withOpacity(0.7), // white/70
                           ),
                         ),
-                      ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStorageCard(BuildContext context) {
-    final usedGB = _storageUsedMB / 1024;
-    final limitGB = _storageLimitMB / 1024;
-    final percentage = _storagePercentage / 100;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16), // space-y-4
-      padding: const EdgeInsets.all(20), // p-5
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24), // rounded-3xl
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Storage icon and info - matches React: gap-3 mb-4
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16), // mb-4
-            child: Row(
-              children: [
-                Container(
-                  width: 48, // w-12
-                  height: 48, // h-12
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12), // rounded-xl
-                  ),
-                  child: Icon(
-                    Icons.storage,
-                    size: 24, // w-6 h-6
-                    color: colorScheme.primary,
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12), // gap-3
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.l10n.storage,
-                        style: AppTextStyles.bodyMedium(
-                          color: colorScheme.onSurface,
-                        ).copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        context.l10n.storageUsed(
-                          usedGB.toStringAsFixed(1),
-                          limitGB.toStringAsFixed(1),
-                        ),
-                        style: AppTextStyles.bodySmall(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+              ),
+
+              // Content below header with full-page scrolling
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  children: [
+                    if (_isLoading) _buildLoadingState(context),
+                    if (!_isLoading) ...[
+                      // Downloaded Videos List
+                      if (_downloadedVideos.isEmpty)
+                        _buildEmptyState()
+                      else
+                        ..._downloadedVideos
+                            .map((video) => _buildVideoCard(context, video)),
                     ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Progress bar - matches React: h-3 bg-gray-100 rounded-full
-          Container(
-            height: 12, // h-3
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(999), // rounded-full
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerRight,
-              widthFactor:
-                  percentage > 1 ? 1 : (percentage < 0 ? 0 : percentage),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [colorScheme.primary, AppColors.orange],
-                  ),
-                  borderRadius: BorderRadius.circular(999),
+                    const SizedBox(height: 140),
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

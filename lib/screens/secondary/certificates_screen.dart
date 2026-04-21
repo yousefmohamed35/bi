@@ -93,117 +93,119 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
     return Scaffold(
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            // Header - Purple gradient like Home
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(AppRadius.largeCard),
-                  bottomRight: Radius.circular(AppRadius.largeCard),
-                ),
-              ),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 16, // pt-4
-                bottom: 32, // pb-8
-                left: 16, // px-4
-                right: 16,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Back button and title - matches React: gap-4 mb-4
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: Container(
-                          width: 40, // w-10
-                          height: 40, // h-10
-                          decoration: const BoxDecoration(
-                            color: AppColors.whiteOverlay20, // bg-white/20
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chevron_right,
-                            color: Colors.white,
-                            size: 20, // w-5 h-5
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16), // gap-4
-                      Text(
-                        context.l10n.certificates,
-                        style: AppTextStyles.h3(color: Colors.white),
-                      ),
-                    ],
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Header - Purple gradient like Home
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryDark],
                   ),
-                  const SizedBox(height: 16), // mb-4
-                  // Certificate count - matches React: gap-2
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.emoji_events,
-                        size: 20, // w-5 h-5
-                        color: Colors.white.withOpacity(0.7), // white/70
-                      ),
-                      const SizedBox(width: 8), // gap-2
-                      Text(
-                        context.l10n.achievedCertificates(_certificates.length),
-                        style: AppTextStyles.bodyMedium(
-                          color: Colors.white.withOpacity(0.7), // white/70
-                        ),
-                      ),
-                    ],
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(AppRadius.largeCard),
+                    bottomRight: Radius.circular(AppRadius.largeCard),
                   ),
-                ],
-              ),
-            ),
-
-            // Content - matches React: px-4 -mt-4 space-y-4
-            Expanded(
-              child: Transform.translate(
-                offset: const Offset(0, -16), // -mt-4
-                child: _isLoading
-                    ? _buildLoadingState(context)
-                    : _certificates.isEmpty
-                        ? _buildEmptyState()
-                        : RefreshIndicator(
-                            onRefresh: _loadCertificates,
-                            child: ListView.builder(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: _certificates.length,
-                              itemBuilder: (context, index) {
-                                final cert = _certificates[index];
-                                return TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: Duration(
-                                      milliseconds: 500 + (index * 100)),
-                                  curve: Curves.easeOut,
-                                  builder: (context, value, child) {
-                                    return Transform.translate(
-                                      offset: Offset(0, 20 * (1 - value)),
-                                      child: Opacity(
-                                        opacity: value,
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: _buildCertificateCard(context, cert),
-                                );
-                              },
+                ),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 16, // pt-4
+                  bottom: 32, // pb-8
+                  left: 16, // px-4
+                  right: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Back button and title - matches React: gap-4 mb-4
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: Container(
+                            width: 40, // w-10
+                            height: 40, // h-10
+                            decoration: const BoxDecoration(
+                              color: AppColors.whiteOverlay20, // bg-white/20
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right,
+                              color: Colors.white,
+                              size: 20, // w-5 h-5
                             ),
                           ),
+                        ),
+                        const SizedBox(width: 16), // gap-4
+                        Text(
+                          context.l10n.certificates,
+                          style: AppTextStyles.h3(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16), // mb-4
+                    // Certificate count - matches React: gap-2
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.emoji_events,
+                          size: 20, // w-5 h-5
+                          color: Colors.white.withOpacity(0.7), // white/70
+                        ),
+                        const SizedBox(width: 8), // gap-2
+                        Text(
+                          context.l10n
+                              .achievedCertificates(_certificates.length),
+                          style: AppTextStyles.bodyMedium(
+                            color: Colors.white.withOpacity(0.7), // white/70
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              // Content - matches React: px-4 -mt-4 space-y-4
+              Transform.translate(
+                offset: const Offset(0, -16), // -mt-4
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      if (_isLoading) _buildLoadingState(context),
+                      if (!_isLoading && _certificates.isEmpty)
+                        _buildEmptyState(),
+                      if (!_isLoading && _certificates.isNotEmpty)
+                        ..._certificates.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final cert = entry.value;
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration:
+                                Duration(milliseconds: 500 + (index * 100)),
+                            curve: Curves.easeOut,
+                            builder: (context, value, child) {
+                              return Transform.translate(
+                                offset: Offset(0, 20 * (1 - value)),
+                                child: Opacity(
+                                  opacity: value,
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: _buildCertificateCard(context, cert),
+                          );
+                        }),
+                      const SizedBox(height: 140),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -350,9 +352,13 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
     final shareUrl =
         cert['share_url']?.toString() ?? cert['verification_url']?.toString();
     final downloadUrl = cert['download_url']?.toString();
-    final courseTitle = cert['course']?['title']?.toString() ??
-        cert['course_title']?.toString() ??
-        context.l10n.course;
+    final courseTitle = context.localizedApiText(
+      cert['course'] is Map<String, dynamic>
+          ? cert['course'] as Map<String, dynamic>
+          : null,
+      'title',
+      fallback: cert['course_title']?.toString() ?? context.l10n.course,
+    );
     final certificateNumber = cert['certificate_number']?.toString() ?? '';
 
     try {
@@ -424,9 +430,11 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
       BuildContext context, Map<String, dynamic> cert) {
     // Extract data from API
     final course = cert['course'] as Map<String, dynamic>?;
-    final courseTitle = course?['title']?.toString() ??
-        cert['course_title']?.toString() ??
-        context.l10n.course;
+    final courseTitle = context.localizedApiText(
+      course,
+      'title',
+      fallback: cert['course_title']?.toString() ?? context.l10n.course,
+    );
     final studentName =
         cert['student_name']?.toString() ?? context.l10n.student;
     final issueDate = cert['issue_date']?.toString();

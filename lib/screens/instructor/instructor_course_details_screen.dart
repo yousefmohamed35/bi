@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../core/localization/localization_helper.dart';
 
 import '../../services/teacher_dashboard_service.dart';
 import '../../core/navigation/route_names.dart';
@@ -217,8 +218,11 @@ class _InstructorCourseDetailsScreenState
             rawThumb,
           )
         : null;
-    final title =
-        course['title']?.toString() ?? (isAr ? 'عنوان الدورة' : 'Course title');
+    final title = context.localizedApiText(
+      course,
+      'title',
+      fallback: isAr ? 'عنوان الدورة' : 'Course title',
+    );
 
     return Container(
       height: 300,
@@ -439,8 +443,11 @@ class _InstructorCourseDetailsScreenState
               const SizedBox(width: 8),
               Text(
                 course['instructor'] is Map
-                    ? (course['instructor'] as Map)['name']?.toString() ??
-                        'المدرب'
+                    ? context.localizedApiText(
+                        Map<String, dynamic>.from(course['instructor'] as Map),
+                        'name',
+                        fallback: 'المدرب',
+                      )
                     : course['instructor']?.toString() ??
                         course['instructorName']?.toString() ??
                         'المدرب',

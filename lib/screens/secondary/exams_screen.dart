@@ -147,216 +147,199 @@ class _ExamsScreenState extends State<ExamsScreen>
 
   Widget _buildStartScreen() {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background Gradient
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 300,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.primary, AppColors.primaryDark],
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            children: [
+              // Background Gradient header
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
                 ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
+                padding: EdgeInsets.fromLTRB(
+                    20, MediaQuery.of(context).padding.top + 20, 20, 28),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white, size: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'الاختبار',
+                      style: GoogleFonts.cairo(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ),
 
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
+              // Exam Card
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
                     children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
+                      // Animated Icon
+                      AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: 1 + (_pulseController.value * 0.1),
+                            child: child,
+                          );
+                        },
                         child: Container(
-                          width: 44,
-                          height: 44,
+                          width: 100,
+                          height: 100,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(14),
+                            gradient: const LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primaryDark
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryMap.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white, size: 18),
+                          child: const Icon(Icons.quiz_rounded,
+                              color: Colors.white, size: 48),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(height: 28),
+
                       Text(
-                        'الاختبار',
+                        'اختبار الكورس',
                         style: GoogleFonts.cairo(
-                          fontSize: 22,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.foreground,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'اختبر معلوماتك في هذا الكورس وتأكد من استيعابك للمفاهيم الأساسية',
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: AppColors.mutedForeground,
+                          height: 1.6,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Stats
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FC),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem(Icons.help_outline_rounded,
+                                '${_examQuestions.length}', 'سؤال'),
+                            Container(
+                                width: 1, height: 40, color: Colors.grey[200]),
+                            _buildStatItem(Icons.timer_outlined, '15', 'دقيقة'),
+                            Container(
+                                width: 1, height: 40, color: Colors.grey[200]),
+                            _buildStatItem(Icons.check_circle_outline_rounded,
+                                '60%', 'للنجاح'),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Start Button
+                      GestureDetector(
+                        onTap: () => setState(() => _examStarted = true),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primaryDark
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryMap.withOpacity(0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.play_arrow_rounded,
+                                  color: Colors.white, size: 26),
+                              const SizedBox(width: 10),
+                              Text(
+                                'ابدأ الاختبار',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                const Spacer(),
-
-                // Exam Card
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Container(
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // Animated Icon
-                        AnimatedBuilder(
-                          animation: _pulseController,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: 1 + (_pulseController.value * 0.1),
-                              child: child,
-                            );
-                          },
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.primaryDark
-                                ],
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primaryMap.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.quiz_rounded,
-                                color: Colors.white, size: 48),
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-
-                        Text(
-                          'اختبار الكورس',
-                          style: GoogleFonts.cairo(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.foreground,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'اختبر معلوماتك في هذا الكورس وتأكد من استيعابك للمفاهيم الأساسية',
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            color: AppColors.mutedForeground,
-                            height: 1.6,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 28),
-
-                        // Stats
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8F9FC),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _buildStatItem(Icons.help_outline_rounded,
-                                  '${_examQuestions.length}', 'سؤال'),
-                              Container(
-                                  width: 1,
-                                  height: 40,
-                                  color: Colors.grey[200]),
-                              _buildStatItem(
-                                  Icons.timer_outlined, '15', 'دقيقة'),
-                              Container(
-                                  width: 1,
-                                  height: 40,
-                                  color: Colors.grey[200]),
-                              _buildStatItem(Icons.check_circle_outline_rounded,
-                                  '60%', 'للنجاح'),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-
-                        // Start Button
-                        GestureDetector(
-                          onTap: () => setState(() => _examStarted = true),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.primaryDark
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primaryMap.withOpacity(0.4),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.play_arrow_rounded,
-                                    color: Colors.white, size: 26),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'ابدأ الاختبار',
-                                  style: GoogleFonts.cairo(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const Spacer(),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -383,332 +366,340 @@ class _ExamsScreenState extends State<ExamsScreen>
     final selectedAnswer = _selectedAnswers[_currentQuestion];
 
     return Scaffold(
-      body: Column(
-        children: [
-          // Header
-          Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.primary, AppColors.primaryDark],
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(AppRadius.largeCard),
-                bottomRight: Radius.circular(AppRadius.largeCard),
-              ),
-            ),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 16,
-              bottom: 28,
-              left: 20,
-              right: 20,
-            ),
-            child: Column(
-              children: [
-                Row(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(AppRadius.largeCard),
+                    bottomRight: Radius.circular(AppRadius.largeCard),
+                  ),
+                ),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 16,
+                  bottom: 28,
+                  left: 20,
+                  right: 20,
+                ),
+                child: Column(
                   children: [
-                    GestureDetector(
-                      onTap: () => context.pop(),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(14),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.close_rounded,
+                                color: Colors.white, size: 22),
+                          ),
                         ),
-                        child: const Icon(Icons.close_rounded,
-                            color: Colors.white, size: 22),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            'السؤال ${_currentQuestion + 1} من ${_examQuestions.length}',
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.timer_outlined,
+                                  color: Colors.white, size: 18),
+                              const SizedBox(width: 6),
+                              Text('14:30',
+                                  style: GoogleFonts.cairo(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Progress
+                    Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerRight,
+                        widthFactor: _progress / 100,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
+
+                    // Question Dots
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(_examQuestions.length, (index) {
+                        final isAnswered = _selectedAnswers[index] != null;
+                        final isCurrent = index == _currentQuestion;
+                        return Container(
+                          width: isCurrent ? 28 : 10,
+                          height: 10,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            color: isCurrent
+                                ? Colors.white
+                                : isAnswered
+                                    ? Colors.white.withOpacity(0.8)
+                                    : Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Question & Options
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Question Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
                       child: Text(
-                        'السؤال ${_currentQuestion + 1} من ${_examQuestions.length}',
+                        question['question'] as String,
                         style: GoogleFonts.cairo(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.foreground,
+                          height: 1.6,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(14),
+                    const SizedBox(height: 24),
+
+                    // Options
+                    ...(question['options'] as List)
+                        .asMap()
+                        .entries
+                        .map((entry) {
+                      final index = entry.key;
+                      final option = entry.value as String;
+                      final isSelected = selectedAnswer == index;
+
+                      return GestureDetector(
+                        onTap: () => _handleSelectAnswer(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primaryMap.withOpacity(0.08)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primaryMap
+                                  : Colors.grey[200]!,
+                              width: isSelected ? 2 : 1,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color:
+                                          AppColors.primaryMap.withOpacity(0.1),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppColors.primaryMap
+                                      : Colors.grey[100],
+                                  shape: BoxShape.circle,
+                                ),
+                                child: isSelected
+                                    ? const Icon(Icons.check_rounded,
+                                        color: Colors.white, size: 18)
+                                    : Center(
+                                        child: Text(
+                                          '${index + 1}',
+                                          style: GoogleFonts.cairo(
+                                            color: Colors.grey[500],
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  option,
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 15,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: isSelected
+                                        ? AppColors.primaryMap
+                                        : AppColors.foreground,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+
+              // Navigation
+              Container(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  bottom: MediaQuery.of(context).padding.bottom + 16,
+                  top: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    if (_currentQuestion > 0)
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _handlePrev,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'السابق',
+                                style: GoogleFonts.cairo(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.foreground),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.timer_outlined,
-                              color: Colors.white, size: 18),
-                          const SizedBox(width: 6),
-                          Text('14:30',
+                    if (_currentQuestion > 0) const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: GestureDetector(
+                        onTap: _currentQuestion == _examQuestions.length - 1
+                            ? _handleSubmit
+                            : _handleNext,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: _currentQuestion ==
+                                      _examQuestions.length - 1
+                                  ? [
+                                      const Color(0xFF10B981),
+                                      const Color(0xFF059669)
+                                    ]
+                                  : [AppColors.primary, AppColors.primaryDark],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (_currentQuestion ==
+                                            _examQuestions.length - 1
+                                        ? Colors.green
+                                        : AppColors.primaryMap)
+                                    .withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              _currentQuestion == _examQuestions.length - 1
+                                  ? 'إنهاء الاختبار'
+                                  : 'التالي',
                               style: GoogleFonts.cairo(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
-                        ],
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-
-                // Progress
-                Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerRight,
-                    widthFactor: _progress / 100,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Question Dots
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_examQuestions.length, (index) {
-                    final isAnswered = _selectedAnswers[index] != null;
-                    final isCurrent = index == _currentQuestion;
-                    return Container(
-                      width: isCurrent ? 28 : 10,
-                      height: 10,
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      decoration: BoxDecoration(
-                        color: isCurrent
-                            ? Colors.white
-                            : isAnswered
-                                ? Colors.white.withOpacity(0.8)
-                                : Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    );
-                  }),
-                ),
-              ],
-            ),
-          ),
-
-          // Question & Options
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  // Question Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      question['question'] as String,
-                      style: GoogleFonts.cairo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.foreground,
-                        height: 1.6,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Options
-                  ...(question['options'] as List).asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final option = entry.value as String;
-                    final isSelected = selectedAnswer == index;
-
-                    return GestureDetector(
-                      onTap: () => _handleSelectAnswer(index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primaryMap.withOpacity(0.08)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primaryMap
-                                : Colors.grey[200]!,
-                            width: isSelected ? 2 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color:
-                                        AppColors.primaryMap.withOpacity(0.1),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Row(
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primaryMap
-                                    : Colors.grey[100],
-                                shape: BoxShape.circle,
-                              ),
-                              child: isSelected
-                                  ? const Icon(Icons.check_rounded,
-                                      color: Colors.white, size: 18)
-                                  : Center(
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: GoogleFonts.cairo(
-                                          color: Colors.grey[500],
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Text(
-                                option,
-                                style: GoogleFonts.cairo(
-                                  fontSize: 15,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                                  color: isSelected
-                                      ? AppColors.primaryMap
-                                      : AppColors.foreground,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ],
               ),
-            ),
+            ],
           ),
-
-          // Navigation
-          Container(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              bottom: MediaQuery.of(context).padding.bottom + 16,
-              top: 16,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                if (_currentQuestion > 0)
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: _handlePrev,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'السابق',
-                            style: GoogleFonts.cairo(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.foreground),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (_currentQuestion > 0) const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: GestureDetector(
-                    onTap: _currentQuestion == _examQuestions.length - 1
-                        ? _handleSubmit
-                        : _handleNext,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: _currentQuestion == _examQuestions.length - 1
-                              ? [
-                                  const Color(0xFF10B981),
-                                  const Color(0xFF059669)
-                                ]
-                              : [AppColors.primary, AppColors.primaryDark],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                (_currentQuestion == _examQuestions.length - 1
-                                        ? Colors.green
-                                        : AppColors.primaryMap)
-                                    .withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          _currentQuestion == _examQuestions.length - 1
-                              ? 'إنهاء الاختبار'
-                              : 'التالي',
-                          style: GoogleFonts.cairo(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

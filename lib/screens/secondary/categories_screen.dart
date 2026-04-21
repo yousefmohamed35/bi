@@ -5,6 +5,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_text_styles.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../widgets/bottom_nav.dart';
 import '../../services/courses_service.dart';
@@ -255,9 +256,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         // Navigate to all courses screen with category filter
         context.push(RouteNames.allCourses, extra: {
           'categoryId': categoryId,
-          'categoryName': category['name']?.toString() ??
-              category['name_ar']?.toString() ??
-              'التصنيف',
+          'categoryName':
+              context.localizedApiText(category, 'name', fallback: 'التصنيف'),
         });
       }
     });
@@ -268,6 +268,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     final bottomNavSafePadding = MediaQuery.of(context).padding.bottom + 110;
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
           Container(
             constraints: const BoxConstraints(maxWidth: 400),
@@ -276,76 +277,78 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                   ? (MediaQuery.of(context).size.width - 400) / 2
                   : 0,
             ),
-            child: Column(
-              children: [
-                // Header - matches React: bg-[var(--purple)] rounded-b-[3rem] pt-4 pb-8 px-4
-                Container(
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(AppRadius.largeCard),
-                      bottomRight: Radius.circular(AppRadius.largeCard),
-                    ),
-                  ),
-                  padding: const EdgeInsets.only(
-                    top: 32, // pt-4
-                    bottom: 32, // pb-8
-                    left: 16, // px-4
-                    right: 16,
-                  ),
-                  child: Column(
-                    children: [
-                      // Back button and title - matches React: gap-4 mb-4
-                      Row(
+            child: RefreshIndicator(
+              onRefresh: _loadCategories,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(bottom: bottomNavSafePadding),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                child: Column(
+                  children: [
+                    // Header - matches React: bg-[var(--purple)] rounded-b-[3rem] pt-4 pb-8 px-4
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(AppRadius.largeCard),
+                          bottomRight: Radius.circular(AppRadius.largeCard),
+                        ),
+                      ),
+                      padding: const EdgeInsets.only(
+                        top: 32, // pt-4
+                        bottom: 32, // pb-8
+                        left: 16, // px-4
+                        right: 16,
+                      ),
+                      child: Column(
                         children: [
-                          GestureDetector(
-                            onTap: () => context.pop(),
-                            child: Container(
-                              width: 40, // w-10
-                              height: 40, // h-10
-                              decoration: const BoxDecoration(
-                                color: AppColors.whiteOverlay20, // bg-white/20
-                                shape: BoxShape.circle,
+                          // Back button and title - matches React: gap-4 mb-4
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => context.pop(),
+                                child: Container(
+                                  width: 40, // w-10
+                                  height: 40, // h-10
+                                  decoration: const BoxDecoration(
+                                    color:
+                                        AppColors.whiteOverlay20, // bg-white/20
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_back_ios_new_rounded,
+                                    color: Colors.white,
+                                    size: 20, // w-5 h-5
+                                  ),
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white,
-                                size: 20, // w-5 h-5
+                              const SizedBox(width: 16), // gap-4
+                              Text(
+                                'التصنيفات',
+                                style: AppTextStyles.h2(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16), // mb-4
+                          // Subtitle
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'اختر المادة التي تريد تعلمها',
+                              style: AppTextStyles.bodyMedium(
+                                color:
+                                    Colors.white.withOpacity(0.7), // white/70
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16), // gap-4
-                          Text(
-                            'التصنيفات',
-                            style: AppTextStyles.h2(color: Colors.white),
-                          ),
                         ],
                       ),
-                      const SizedBox(height: 16), // mb-4
-                      // Subtitle
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'اختر المادة التي تريد تعلمها',
-                          style: AppTextStyles.bodyMedium(
-                            color: Colors.white.withOpacity(0.7), // white/70
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
 
-                // Categories Grid - matches React: px-4 -mt-6
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _loadCategories,
-                    child: SingleChildScrollView(
-                      padding:
-                          EdgeInsets.fromLTRB(16, 0, 16, bottomNavSafePadding),
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
+                    // Categories Grid - matches React: px-4 -mt-6
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Transform.translate(
                         offset: const Offset(0, -24), // -mt-6 = -24px
                         child: _isLoading
@@ -372,10 +375,11 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                       final iconUrl =
                                           category['icon']?.toString();
                                       final icon = _getCategoryIcon(iconUrl);
-                                      final name =
-                                          category['name_ar']?.toString() ??
-                                              category['name']?.toString() ??
-                                              'التصنيف';
+                                      final name = context.localizedApiText(
+                                        category,
+                                        'name',
+                                        fallback: 'التصنيف',
+                                      );
                                       final coursesCount =
                                           (category['courses_count'] as num?)
                                                   ?.toInt() ??
@@ -507,9 +511,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                   ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
 

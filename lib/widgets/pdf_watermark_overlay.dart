@@ -17,7 +17,7 @@ class PdfWatermarkOverlay extends StatelessWidget {
   const PdfWatermarkOverlay({
     super.key,
     required this.text,
-    this.opacity = 0.10,
+    this.opacity = 0.50,
     this.angle = -math.pi / 4,
   });
 
@@ -66,7 +66,7 @@ class _PdfWatermarkPainter extends CustomPainter {
     // Scale font size based on page diagonal for consistent look.
     final diagonal =
         math.sqrt(size.width * size.width + size.height * size.height);
-    final fontSize = (diagonal / 22).clamp(14.0, 34.0);
+    final fontSize = (diagonal / 33).clamp(7.0, 18.0);
 
     final painter = TextPainter(
       text: TextSpan(

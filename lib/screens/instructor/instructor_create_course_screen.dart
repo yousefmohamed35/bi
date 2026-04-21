@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 // import 'package:image_picker/image_picker.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../services/courses_service.dart';
 import '../../services/profile_service.dart';
@@ -437,15 +438,11 @@ class _InstructorCreateCourseScreenState
                                       ),
                                       items: _categories.map((c) {
                                         final id = c['id']?.toString() ?? '';
-                                        final name = (isAr
-                                                    ? (c['nameAr'] ??
-                                                        c['name_ar'] ??
-                                                        c['name'])
-                                                    : (c['name'] ??
-                                                        c['nameAr'] ??
-                                                        c['name_ar']))
-                                                ?.toString() ??
-                                            id;
+                                        final name = context.localizedApiText(
+                                          c,
+                                          'name',
+                                          fallback: id,
+                                        );
                                         return DropdownMenuItem(
                                           value: id,
                                           child: Align(

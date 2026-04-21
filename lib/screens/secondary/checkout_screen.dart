@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_text_styles.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../services/payments_service.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -379,6 +380,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ? Colors.black.withOpacity(0.24)
         : Colors.black.withOpacity(0.05);
     final subtleBorderColor = colorScheme.outline.withOpacity(0.22);
+    final selectedMethodBackground =
+        isDark ? colorScheme.primaryContainer : AppColors.lavenderLight;
     final course = widget.course;
     if (course == null) {
       return Scaffold(
@@ -389,55 +392,56 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Scaffold(
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            // Header - matches React: bg-[var(--purple)] rounded-b-[3rem] pt-4 pb-8 px-4
-            Container(
-              decoration: const BoxDecoration(
-                color: AppColors.primaryMap,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(AppRadius.largeCard),
-                  bottomRight: Radius.circular(AppRadius.largeCard),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            children: [
+              // Header - matches React: bg-[var(--purple)] rounded-b-[3rem] pt-4 pb-8 px-4
+              Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryMap,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(AppRadius.largeCard),
+                    bottomRight: Radius.circular(AppRadius.largeCard),
+                  ),
                 ),
-              ),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 16, // pt-4
-                bottom: 32, // pb-8
-                left: 16, // px-4
-                right: 16,
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Container(
-                      width: 40, // w-10
-                      height: 40, // h-10
-                      decoration: const BoxDecoration(
-                        color: AppColors.whiteOverlay20, // bg-white/20
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 20, // w-5 h-5
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 16, // pt-4
+                  bottom: 32, // pb-8
+                  left: 16, // px-4
+                  right: 16,
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        width: 40, // w-10
+                        height: 40, // h-10
+                        decoration: const BoxDecoration(
+                          color: AppColors.whiteOverlay20, // bg-white/20
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 20, // w-5 h-5
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16), // gap-4
-                  Text(
-                    l10n.completePurchase,
-                    style: AppTextStyles.h3(color: Colors.white),
-                  ),
-                ],
+                    const SizedBox(width: 16), // gap-4
+                    Text(
+                      l10n.completePurchase,
+                      style: AppTextStyles.h3(color: Colors.white),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            // Content - matches React: px-4 -mt-4 space-y-4
-            Expanded(
-              child: Transform.translate(
+              // Content - matches React: px-4 -mt-4 space-y-4
+              Transform.translate(
                 offset: const Offset(0, -16), // -mt-4
-                child: SingleChildScrollView(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16), // px-4
                   child: Column(
                     children: [
@@ -479,8 +483,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    course['title']?.toString() ??
-                                        l10n.courseTitle,
+                                    context.localizedApiText(
+                                      course,
+                                      'title',
+                                      fallback: l10n.courseTitle,
+                                    ),
                                     style: AppTextStyles.bodyMedium(
                                       color: colorScheme.onSurface,
                                     ).copyWith(fontWeight: FontWeight.bold),
@@ -490,9 +497,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   const SizedBox(height: 4), // mb-1
                                   Text(
                                     course['instructor'] is Map
-                                        ? (course['instructor'] as Map)['name']
-                                                ?.toString() ??
-                                            l10n.instructor
+                                        ? context.localizedApiText(
+                                            Map<String, dynamic>.from(
+                                              course['instructor'] as Map,
+                                            ),
+                                            'name',
+                                            fallback: l10n.instructor,
+                                          )
                                         : course['instructor']?.toString() ??
                                             l10n.instructor,
                                     style: AppTextStyles.bodySmall(
@@ -717,6 +728,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ..._getPaymentMethods(context).map((method) {
                               final isSelected =
                                   _selectedPayment == method['id'];
+                              final selectedMethodTitleColor = isSelected
+                                  ? (isDark
+                                      ? colorScheme.onPrimaryContainer
+                                      : colorScheme.onSurface)
+                                  : colorScheme.onSurface;
+                              final selectedMethodDescriptionColor = isSelected
+                                  ? (isDark
+                                      ? colorScheme.onPrimaryContainer
+                                          .withOpacity(0.82)
+                                      : colorScheme.onSurfaceVariant)
+                                  : colorScheme.onSurfaceVariant;
                               return GestureDetector(
                                 onTap: () {
                                   setState(() {
@@ -729,7 +751,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   padding: const EdgeInsets.all(16), // p-4
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? AppColors.lavenderLight
+                                        ? selectedMethodBackground
                                         : Colors.transparent,
                                     border: Border.all(
                                       color: isSelected
@@ -770,15 +792,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                             Text(
                                               method['name'] as String,
                                               style: AppTextStyles.bodyMedium(
-                                                color: colorScheme.onSurface,
+                                                color: selectedMethodTitleColor,
                                               ).copyWith(
                                                   fontWeight: FontWeight.w500),
                                             ),
                                             Text(
                                               method['description'] as String,
                                               style: AppTextStyles.labelSmall(
-                                                color: colorScheme
-                                                    .onSurfaceVariant,
+                                                color:
+                                                    selectedMethodDescriptionColor,
                                               ),
                                             ),
                                           ],
@@ -980,13 +1002,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 140),
                     ],
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

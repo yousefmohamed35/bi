@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import '../../services/token_storage_service.dart';
 
@@ -10,6 +11,38 @@ class ApiClient {
   ApiClient._();
 
   static final ApiClient instance = ApiClient._();
+
+  MediaType? _resolveMediaType(String filePath) {
+    final extension = filePath.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      case 'gif':
+        return MediaType('image', 'gif');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'mp4':
+        return MediaType('video', 'mp4');
+      case 'webm':
+        return MediaType('video', 'webm');
+      case 'mov':
+        return MediaType('video', 'quicktime');
+      case 'pdf':
+        return MediaType('application', 'pdf');
+      case 'doc':
+        return MediaType('application', 'msword');
+      case 'docx':
+        return MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.wordprocessingml.document',
+        );
+      default:
+        return null;
+    }
+  }
 
   String _normalizeBearerToken(String token) {
     var normalized = token.trim();
@@ -249,6 +282,7 @@ class ApiClient {
       return responseData;
     } catch (e) {
       _logResponse('POST', url, 0, null, e.toString(), logTag: logTag);
+      if (e is ApiException) rethrow;
       throw ApiException('Network error: ${e.toString()}');
     }
   }
@@ -283,6 +317,7 @@ class ApiClient {
       return responseData;
     } catch (e) {
       _logResponse('PUT', url, 0, null, e.toString(), logTag: logTag);
+      if (e is ApiException) rethrow;
       throw ApiException('Network error: ${e.toString()}');
     }
   }
@@ -317,6 +352,7 @@ class ApiClient {
       return responseData;
     } catch (e) {
       _logResponse('PATCH', url, 0, null, e.toString(), logTag: logTag);
+      if (e is ApiException) rethrow;
       throw ApiException('Network error: ${e.toString()}');
     }
   }
@@ -349,6 +385,7 @@ class ApiClient {
       return responseData;
     } catch (e) {
       _logResponse('DELETE', url, 0, null, e.toString(), logTag: logTag);
+      if (e is ApiException) rethrow;
       throw ApiException('Network error: ${e.toString()}');
     }
   }
@@ -402,6 +439,7 @@ class ApiClient {
             fieldName,
             file.path,
             filename: fileName,
+            contentType: _resolveMediaType(file.path),
           ),
         );
       }
@@ -433,6 +471,9 @@ class ApiClient {
           logTag: logTag);
       return responseData;
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       _logResponse('POST (Multipart)', url, 0, null, e.toString(),
           logTag: logTag);
       if (kDebugMode) {
@@ -460,7 +501,27 @@ class ApiClient {
 
       try {
         errorData = jsonDecode(response.body) as Map<String, dynamic>;
-        errorMessage = errorData['message'] as String? ?? errorMessage;
+        final errors = errorData['errors'];
+        String? detailedMessage;
+        if (errors is Map) {
+          for (final value in errors.values) {
+            if (value is String && value.trim().isNotEmpty) {
+              detailedMessage = value.trim();
+              break;
+            }
+            if (value is List && value.isNotEmpty) {
+              final first = value.first?.toString() ?? '';
+              if (first.trim().isNotEmpty) {
+                detailedMessage = first.trim();
+                break;
+              }
+            }
+          }
+        }
+        errorMessage = detailedMessage ??
+            errorData['message'] as String? ??
+            errorData['error'] as String? ??
+            errorMessage;
       } catch (e) {
         // Not JSON, use raw body
       }
@@ -504,7 +565,11 @@ class ApiClient {
         }
       }
 
-      throw ApiException(errorMessage);
+      throw ApiException(
+        errorMessage,
+        statusCode: response.statusCode,
+        responseBody: response.body,
+      );
     }
   }
 }
@@ -512,8 +577,10 @@ class ApiClient {
 /// API Exception class
 class ApiException implements Exception {
   final String message;
+  final int? statusCode;
+  final String? responseBody;
 
-  ApiException(this.message);
+  ApiException(this.message, {this.statusCode, this.responseBody});
 
   @override
   String toString() => message;

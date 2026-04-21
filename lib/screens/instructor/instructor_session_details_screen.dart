@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../services/teacher_dashboard_service.dart';
 import '../../services/upload_service.dart';
 
@@ -40,7 +41,10 @@ class _InstructorSessionDetailsScreenState
   void initState() {
     super.initState();
     _titleController = TextEditingController(
-      text: widget.section['title']?.toString() ?? '',
+      text: widget.section['title']?.toString() ??
+          widget.section['title_ar']?.toString() ??
+          widget.section['title_en']?.toString() ??
+          '',
     );
     final lessonsRaw = widget.section['lessons'];
     _lessons = lessonsRaw is List
@@ -492,8 +496,11 @@ class _InstructorSessionDetailsScreenState
   @override
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final courseTitle =
-        widget.course?['title']?.toString() ?? (isAr ? 'الدورة' : 'Course');
+    final courseTitle = context.localizedApiText(
+      widget.course,
+      'title',
+      fallback: isAr ? 'الدورة' : 'Course',
+    );
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -661,8 +668,8 @@ class _InstructorSessionDetailsScreenState
                     decoration: BoxDecoration(
                       color: AppColors.primaryMap.withOpacity(0.06),
                       borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: AppColors.primaryMap.withOpacity(0.15)),
+                      border: Border.all(
+                          color: AppColors.primaryMap.withOpacity(0.15)),
                     ),
                     child: Row(
                       children: [
@@ -1095,7 +1102,7 @@ class _SessionAttendanceCardState extends State<SessionAttendanceCard> {
             children: [
               if (course['title'] != null)
                 Text(
-                  course['title']?.toString() ?? '',
+                  context.localizedApiText(course, 'title'),
                   style: GoogleFonts.cairo(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

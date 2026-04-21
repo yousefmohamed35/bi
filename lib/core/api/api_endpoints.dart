@@ -81,6 +81,10 @@ class ApiEndpoints {
       '$baseUrl/courses/$courseId/lessons/$lessonId/watermarked-pdf';
   static String courseLessonProgress(String courseId, String lessonId) =>
       '$baseUrl/courses/$courseId/lessons/$lessonId/progress';
+  static String trackLessonProgress(String courseId, String lessonId) =>
+      '$baseUrl/courses/$courseId/lessons/$lessonId/track-progress';
+  static String videoStream(String videoId) =>
+      '$baseUrl/videos/$videoId/stream';
 
   // Enrollment
   static String enrollCourse(String id) => '$baseUrl/courses/$id/enroll';

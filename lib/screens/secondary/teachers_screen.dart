@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../data/sample_teachers.dart';
 import '../../l10n/app_localizations.dart';
@@ -189,7 +190,7 @@ class _TeachersScreenState extends State<TeachersScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      teacher['name']?.toString() ?? '',
+                                      context.localizedApiText(teacher, 'name'),
                                       style: GoogleFonts.cairo(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w800,
@@ -198,7 +199,10 @@ class _TeachersScreenState extends State<TeachersScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      teacher['title']?.toString() ?? '',
+                                      context.localizedApiText(
+                                        teacher,
+                                        'title',
+                                      ),
                                       style: GoogleFonts.cairo(
                                         fontSize: 12,
                                         color: AppColors.mutedForeground,

@@ -2,15 +2,16 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../core/navigation/route_names.dart';
 import '../../core/notification_service/notification_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/upload_service.dart';
 import '../../l10n/app_localizations.dart';
 
 extension _RegisterScreenL10n on AppLocalizations {
@@ -54,6 +55,10 @@ extension _RegisterScreenL10n on AppLocalizations {
   String get tapToUploadProfileImage => localeName == 'ar'
       ? 'اضغط لرفع صورة حسابك'
       : 'Tap to upload your profile image';
+
+  String get invalidUsernameFormat => localeName == 'ar'
+      ? 'اسم المستخدم يجب أن لا يحتوي على حروف وأرقام وشرطة سفلية (_) فقط'
+      : 'Username can only contain letters, numbers, and underscore (_)';
 }
 
 /// Register Screen - Clean Design like Account Page
@@ -82,13 +87,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _studentType;
   File? _profileImage;
 
-  final ImagePicker _imagePicker = ImagePicker();
-
   Future<void> _pickImage() async {
-    final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
+    final picked = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowMultiple: false,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    );
+    if (picked == null || picked.files.isEmpty) {
+      return;
+    }
+    final path = picked.files.single.path;
+    if (path != null && path.isNotEmpty) {
       setState(() {
-        _profileImage = File(picked.path);
+        _profileImage = File(path);
       });
     }
   }
@@ -138,6 +149,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _isLoading = true);
 
       try {
+        String? avatarUrl;
+        if (_profileImage != null) {
+          avatarUrl = await UploadService.instance.uploadImage(
+            _profileImage!,
+            requireAuth: false,
+          );
+        }
+
         // Build device info for registration
         final deviceId = await _getOrCreateDeviceId();
         final deviceInfoPlugin = DeviceInfoPlugin();
@@ -154,21 +173,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
           platform = 'iOS';
         }
 
+        if (FirebaseNotification.fcmToken == null ||
+            FirebaseNotification.fcmToken!.trim().isEmpty) {
+          await FirebaseNotification.getFcmToken();
+        }
         final fcmToken = FirebaseNotification.fcmToken;
 
         final email = _emailController.text.trim();
-        final verificationToken =
-            await AuthService.instance.sendRegisterVerificationCode(
+        final registerResponse = await AuthService.instance.register(
+          name: fullName,
           email: email,
+          username: _usernameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          whatsAppNumber: _whatsAppController.text.trim(),
+          nationalId: _nationalIdController.text.trim(),
+          password: _passwordController.text,
+          passwordConfirmation: _passwordConfirmationController.text,
+          acceptTerms: _acceptTerms,
+          // studentType: _studentType ?? 'online',
+          deviceId: deviceId,
+          deviceName: deviceName,
+          platform: platform,
+          fcmToken: fcmToken,
+          //  avatar: avatarUrl,
         );
 
         if (!mounted) return;
-
-        // Verification code sent, continue with verify-code screen
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'تم إرسال رمز التحقق إلى بريدك الإلكتروني',
+              (registerResponse.message != null &&
+                      registerResponse.message!.trim().isNotEmpty)
+                  ? registerResponse.message!.trim()
+                  : 'تم إنشاء الحساب. يرجى تأكيد البريد الإلكتروني',
               style: GoogleFonts.cairo(),
             ),
             backgroundColor: Colors.green,
@@ -181,23 +218,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           extra: {
             'flow': 'register',
             'email': email,
-            'verificationToken': verificationToken,
-            'registrationData': {
-              'name': fullName,
-              'email': email,
-              'username': _usernameController.text.trim(),
-              'phone': _phoneController.text.trim(),
-              'whatsAppNumber': _whatsAppController.text.trim(),
-              'nationalId': _nationalIdController.text.trim(),
-              'password': _passwordController.text,
-              'passwordConfirmation': _passwordConfirmationController.text,
-              'acceptTerms': _acceptTerms,
-              'studentType': _studentType ?? 'online',
-              'deviceId': deviceId,
-              'deviceName': deviceName,
-              'platform': platform,
-              'fcmToken': fcmToken,
-            },
           },
         );
       } catch (e) {
@@ -362,6 +382,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           hint:
                               AppLocalizations.of(context)!.pleaseEnterUsername,
                           icon: Icons.badge_outlined,
+                          validatorType: 'username',
                         ),
                         const SizedBox(height: 16),
 
@@ -789,39 +810,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         validator: (value) {
           final l10n = AppLocalizations.of(context)!;
-          if (value == null || value.isEmpty) {
+          final normalizedValue = value?.trim() ?? '';
+          if (normalizedValue.isEmpty) {
             return l10n.fieldRequired;
           }
           if (validatorType == 'email' ||
               (validatorType == null &&
                   keyboardType == TextInputType.emailAddress)) {
             final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-            if (!emailRegex.hasMatch(value)) {
+            if (!emailRegex.hasMatch(normalizedValue)) {
               return l10n.invalidEmail;
             }
           }
           if (isPassword &&
               passwordFieldType == 'password' &&
-              value.length < 6) {
+              normalizedValue.length < 6) {
             return l10n.passwordMinLength;
           }
           if (isPassword && passwordFieldType == 'confirmation') {
-            if (value != _passwordController.text) {
+            if (normalizedValue != _passwordController.text.trim()) {
               return l10n.passwordMismatch;
             }
           }
           if (validatorType == 'phone' ||
               (validatorType == null && keyboardType == TextInputType.phone)) {
             final phoneRegex = RegExp(r'^01[0-2,5]{1}[0-9]{8}$');
-            if (!phoneRegex.hasMatch(value)) {
+            if (!phoneRegex.hasMatch(normalizedValue)) {
               return l10n.invalidPhone;
             }
           }
           if (validatorType == 'nationalId') {
             // Basic Egyptian national ID validation: 14 digits, starting with 2 or 3
             final nationalIdRegex = RegExp(r'^[23][0-9]{13}$');
-            if (!nationalIdRegex.hasMatch(value)) {
+            if (!nationalIdRegex.hasMatch(normalizedValue)) {
               return l10n.invalidNationalId;
+            }
+          }
+          if (validatorType == 'username') {
+            final usernameRegex = RegExp(r'^[A-Za-z0-9_]+$');
+            if (!usernameRegex.hasMatch(normalizedValue)) {
+              return l10n.invalidUsernameFormat;
             }
           }
           return null;

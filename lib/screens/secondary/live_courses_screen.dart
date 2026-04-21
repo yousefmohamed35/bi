@@ -388,9 +388,17 @@ class _LiveCourseCard extends StatelessWidget {
         course['is_live'] == true;
     final isUpcoming =
         course['status'] == 'upcoming' || course['status'] == 'scheduled';
-    final courseTitle = course['title']?.toString() ?? context.l10n.liveSession;
+    final courseTitle = context.localizedApiText(
+      course,
+      'title',
+      fallback: context.l10n.liveSession,
+    );
     final instructor = course['instructor'] is Map
-        ? (course['instructor'] as Map)['name']?.toString() ?? ''
+        ? context.localizedApiText(
+            Map<String, dynamic>.from(course['instructor'] as Map),
+            'name',
+            fallback: context.l10n.instructor,
+          )
         : course['instructor']?.toString() ?? context.l10n.instructor;
     final startDate = course['start_date']?.toString() ??
         course['date']?.toString() ??

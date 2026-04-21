@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../widgets/instructor_bottom_nav.dart';
 import '../../services/profile_service.dart';
@@ -529,9 +530,11 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
           const SizedBox(height: 14),
           ..._byCourse.take(15).map((e) {
             final name = e['courseName']?.toString() ??
-                e['title']?.toString() ??
-                e['name']?.toString() ??
-                '—';
+                context.localizedApiText(
+                  e,
+                  'title',
+                  fallback: context.localizedApiText(e, 'name', fallback: '—'),
+                );
             final amount = (e['amount'] as num?)?.toDouble() ??
                 (e['revenue'] as num?)?.toDouble() ??
                 (e['earnings'] as num?)?.toDouble() ??

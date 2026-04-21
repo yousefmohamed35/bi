@@ -384,6 +384,10 @@
   "@lessons": {
     "description": "الدروس"
   },
+  "about": "نبذة",
+  "@about": {
+    "description": "تبويب نبذة عن الكورس"
+  },
   "lesson": "الدرس",
   "@lesson": {
     "description": "الدرس"
@@ -1038,6 +1042,10 @@
   "noQuestionsAvailable": "لا توجد أسئلة متاحة في الامتحان",
   "@noQuestionsAvailable": {
     "description": "لا توجد أسئلة متاحة"
+  },
+  "attemptIdMissing": "معرف محاولة الامتحان غير متوفر",
+  "@attemptIdMissing": {
+    "description": "خطأ عند عدم توفر معرف محاولة الامتحان"
   },
   "finishExamButton": "إنهاء الامتحان",
   "@finishExamButton": {
@@ -1956,13 +1964,13 @@
   "@verificationLinkLabel": {
     "description": "رابط التحقق"
   },
-  "centerAttendance": "حضور السنتر",
+  "centerAttendance": "حضور",
   "@centerAttendance": {
-    "description": "حضور السنتر"
+    "description": "حضور"
   },
-  "centerAttendanceDescription": "اعرض هذا الكود عند السنتر لتسجيل حضورك",
+  "centerAttendanceDescription": "اعرض هذا الكود لتسجيل حضورك",
   "@centerAttendanceDescription": {
-    "description": "وصف حضور السنتر"
+    "description": "وصف حضور"
   },
   "loadingQrCode": "جاري تحميل الكود...",
   "@loadingQrCode": {
@@ -1972,7 +1980,7 @@
   "@errorLoadingQrCode": {
     "description": "خطأ تحميل الكود"
   },
-  "scanQrCodeInstruction": "اعرض هذا الكود لموظفي السنتر لتسجيل حضورك",
+  "scanQrCodeInstruction": "اعرض هذا الكود لتسجيل حضورك",
   "@scanQrCodeInstruction": {
     "description": "تعليمات عرض الكود"
   },
@@ -2021,6 +2029,145 @@
         "type": "int"
       }
     }
+  },
+  "unableToLoadRecord": "تعذر تحميل التسجيل",
+  "@unableToLoadRecord": {
+    "description": "حالة فارغة لمشغل التسجيل الصوتي"
+  },
+  "courseLessonsSectionVideos": "فيديوهات",
+  "@courseLessonsSectionVideos": {
+    "description": "قسم دروس الفيديو في تفاصيل الكورس"
+  },
+  "courseLessonsSectionPdfs": "ملفات PDF",
+  "@courseLessonsSectionPdfs": {
+    "description": "قسم ملفات PDF"
+  },
+  "courseLessonsSectionExams": "الاختبارات",
+  "@courseLessonsSectionExams": {
+    "description": "قسم الاختبارات"
+  },
+  "courseLessonsSectionImages": "صور",
+  "@courseLessonsSectionImages": {
+    "description": "قسم الصور"
+  },
+  "courseLessonsSectionRecords": "تسجيلات",
+  "@courseLessonsSectionRecords": {
+    "description": "قسم التسجيلات الصوتية"
+  },
+  "fallbackLessonImageTitle": "صورة",
+  "@fallbackLessonImageTitle": {
+    "description": "عنوان افتراضي لدرس صورة"
+  },
+  "fallbackLessonRecordTitle": "تسجيل",
+  "@fallbackLessonRecordTitle": {
+    "description": "عنوان افتراضي لدرس صوتي"
+  },
+  "fallbackImagesGalleryTitle": "صور",
+  "@fallbackImagesGalleryTitle": {
+    "description": "عنوان معرض الصور الافتراضي"
+  },
+  "noVideoQualityOptions": "لا توجد خيارات جودة فيديو",
+  "@noVideoQualityOptions": {
+    "description": "رسالة عند عدم توفر جودات للبث"
+  },
+  "onlyAutoQualityAvailable": "جودة تلقائية فقط متاحة لهذا الفيديو حالياً",
+  "@onlyAutoQualityAvailable": {
+    "description": "رسالة عند توفر الجودة التلقائية فقط"
+  },
+  "videoQualitySheetTitle": "جودة الفيديو",
+  "@videoQualitySheetTitle": {
+    "description": "عنوان اختيار الجودة"
+  },
+  "videoQualityAuto": "تلقائي",
+  "@videoQualityAuto": {
+    "description": "خيار الجودة التلقائية"
+  },
+  "cannotDownloadVideoMissingIds": "لا يمكن تحميل هذا الفيديو",
+  "@cannotDownloadVideoMissingIds": {
+    "description": "خطأ تحميل عند نقص المعرفات"
+  },
+  "noVideoDownloadUrl": "لا يوجد رابط فيديو للتحميل",
+  "@noVideoDownloadUrl": {
+    "description": "خطأ عند غياب رابط الفيديو"
+  },
+  "videoDownloadedSuccessfully": "تم تحميل الفيديو بنجاح",
+  "@videoDownloadedSuccessfully": {
+    "description": "نجاح تحميل الفيديو"
+  },
+  "videoDownloadFailed": "فشل تحميل الفيديو",
+  "@videoDownloadFailed": {
+    "description": "فشل عام لتحميل الفيديو"
+  },
+  "videoDownloadError": "خطأ في تحميل الفيديو: {message}",
+  "@videoDownloadError": {
+    "description": "خطأ تحميل مع نص إضافي",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "videoDownloadStopped": "تم إيقاف التحميل",
+  "@videoDownloadStopped": {
+    "description": "إلغاء التحميل من المستخدم"
+  },
+  "defaultVideoLessonTitle": "فيديو",
+  "@defaultVideoLessonTitle": {
+    "description": "عنوان افتراضي لدرس فيديو"
+  },
+  "defaultCourseTitleWithId": "كورس {courseId}",
+  "@defaultCourseTitleWithId": {
+    "description": "عنوان كورس افتراضي",
+    "placeholders": {
+      "courseId": {
+        "type": "String"
+      }
+    }
+  },
+  "videoPlayerLoadError": "لا يمكن تحميل الفيديو",
+  "@videoPlayerLoadError": {
+    "description": "خطأ عرض الفيديو"
+  },
+  "downloadProgressPercent": "جاري التحميل: {percent}%",
+  "@downloadProgressPercent": {
+    "description": "نسبة تقدم التحميل",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "stopDownloading": "إيقاف",
+  "@stopDownloading": {
+    "description": "إيقاف التحميل الجاري"
+  },
+  "noImageForLesson": "لا توجد صورة لهذا الدرس",
+  "@noImageForLesson": {
+    "description": "رسالة عند غياب رابط الصورة"
+  },
+  "noRecordForLesson": "لا يوجد تسجيل لهذا الدرس",
+  "@noRecordForLesson": {
+    "description": "رسالة عند غياب رابط التسجيل"
+  },
+  "errorLoadingReviews": "حدث خطأ أثناء تحميل المراجعات",
+  "@errorLoadingReviews": {
+    "description": "يظهر عند فشل تحميل مراجعات الدورة"
+  },
+  "errorSubmittingReview": "حدث خطأ أثناء إرسال المراجعة",
+  "@errorSubmittingReview": {
+    "description": "يظهر عند فشل إرسال مراجعة الدورة"
+  },
+  "pointsLabel": "نقاط",
+  "@pointsLabel": {
+    "description": "Points unit label"
+  },
+  "totalPointsLabel": "إجمالي النقاط",
+  "@totalPointsLabel": {
+    "description": "Total points label"
+  },
+  "attemptsExhausted": "تم استنفاد عدد المحاولات",
+  "@attemptsExhausted": {
+    "description": "Cannot start exam because attempts exhausted"
   }
 }
 

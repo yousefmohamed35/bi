@@ -212,38 +212,42 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          Column(
-            children: [
-              // Header
-              _buildHeader(context),
+          SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                // Header now scrolls with content
+                _buildHeader(context),
 
-              // Filters
-              _buildFilters(),
+                // Filters
+                _buildFilters(),
 
-              // Courses Grid
-              Expanded(
-                child: _isLoading
-                    ? _buildCoursesSkeleton()
-                    : _courses.isEmpty
-                        ? _buildEmptyState()
-                        : GridView.builder(
-                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
-                            physics: const BouncingScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                              childAspectRatio: 0.68,
-                            ),
-                            itemCount: _courses.length,
-                            itemBuilder: (context, index) {
-                              return _buildCourseCard(_courses[index]);
-                            },
-                          ),
-              ),
-            ],
+                // Courses Grid
+                if (_isLoading)
+                  _buildCoursesSkeleton()
+                else if (_courses.isEmpty)
+                  _buildEmptyState()
+                else
+                  GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                      childAspectRatio: 0.54,
+                    ),
+                    itemCount: _courses.length,
+                    itemBuilder: (context, index) {
+                      return _buildCourseCard(_courses[index]);
+                    },
+                  ),
+              ],
+            ),
           ),
           // Bottom Navigation
           const BottomNav(activeTab: 'courses'),
@@ -386,9 +390,11 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                       final category = _getCategoryList(context)[index];
                       final categoryId = category['id']?.toString();
                       final isSelected = _selectedCategoryId == categoryId;
-                      final categoryName = category['name']?.toString() ??
-                          category['name_ar']?.toString() ??
-                          context.l10n.all;
+                      final categoryName = context.localizedApiText(
+                        category,
+                        'name',
+                        fallback: context.l10n.all,
+                      );
                       return Padding(
                         padding: const EdgeInsets.only(left: 8),
                         child: GestureDetector(
@@ -571,10 +577,16 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
 
     final thumbnail = course['thumbnail']?.toString() ?? '';
     final categoryName = course['category'] is Map
-        ? (course['category'] as Map)['name']?.toString() ?? ''
+        ? context.localizedApiText(
+            Map<String, dynamic>.from(course['category'] as Map),
+            'name',
+          )
         : course['category']?.toString() ?? '';
     final instructorName = course['instructor'] is Map
-        ? (course['instructor'] as Map)['name']?.toString() ?? ''
+        ? context.localizedApiText(
+            Map<String, dynamic>.from(course['instructor'] as Map),
+            'name',
+          )
         : course['instructor']?.toString() ?? '';
 
     // Safely parse rating
@@ -751,7 +763,11 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
                     if (categoryName.isNotEmpty) const SizedBox(height: 6),
                     // Title
                     Text(
-                      course['title']?.toString() ?? context.l10n.noTitle,
+                      context.localizedApiText(
+                        course,
+                        'title',
+                        fallback: context.l10n.noTitle,
+                      ),
                       style: GoogleFonts.cairo(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -920,6 +936,8 @@ class _AllCoursesScreenState extends State<AllCoursesScreen> {
       enabled: true,
       child: GridView.builder(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 14,

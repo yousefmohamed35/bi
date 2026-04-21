@@ -59,12 +59,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get warningTitle => 'Warning';
 
   @override
-  String get warningResellText =>
-      'Warning: all contents are prohibited to resell or used in any commercial uses by the Egyptian law.';
+  String get warningResellText => 'Warning: all contents are prohibited to resell or used in any commercial uses by the Egyptian law.';
 
   @override
-  String get warningWelcomeText =>
-      'And you are welcome to be one of the bimaristanian and a member in our small family.';
+  String get warningWelcomeText => 'And you are welcome to be one of the bimaristanian and a member in our small family.';
 
   @override
   String get chat => 'Chat';
@@ -99,8 +97,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get failedToLoadFile =>
-      'Failed to load file. Please check your internet connection or that the file exists.';
+  String get failedToLoadFile => 'Failed to load file. Please check your internet connection or that the file exists.';
 
   @override
   String errorLoadingFileWithDetails(String error) {
@@ -254,8 +251,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get topic => 'Topic';
 
   @override
-  String get startLearningJourney =>
-      'Start your learning journey and enroll in your first course';
+  String get startLearningJourney => 'Start your learning journey and enroll in your first course';
 
   @override
   String get discount50 => '50% off on all courses';
@@ -297,8 +293,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get course => 'Course';
 
   @override
-  String get courseSuitable =>
-      'This course is suitable for both beginners and professionals.';
+  String get courseSuitable => 'This course is suitable for both beginners and professionals.';
 
   @override
   String get enrolledSuccessfully => 'Enrolled in course successfully';
@@ -361,8 +356,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloads => 'Downloads';
 
   @override
-  String get downloadLinkReceived =>
-      'Download link received. Download will start soon...';
+  String get downloadLinkReceived => 'Download link received. Download will start soon...';
 
   @override
   String errorDownloading(String error) {
@@ -546,12 +540,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gallery => 'Gallery';
 
   @override
-  String get cameraPermissionDenied =>
-      'Camera permission denied. Please allow camera access from settings';
+  String get cameraPermissionDenied => 'Camera permission denied. Please allow camera access from settings';
 
   @override
-  String get galleryPermissionDenied =>
-      'Gallery permission denied. Please allow photo access from settings';
+  String get galleryPermissionDenied => 'Gallery permission denied. Please allow photo access from settings';
 
   @override
   String get errorPickingImage => 'Error picking image';
@@ -600,15 +592,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sentSuccessfully => 'Sent successfully!';
 
   @override
-  String get resetPasswordSent =>
-      'Password reset link has been sent to your email';
+  String get resetPasswordSent => 'Password reset link has been sent to your email';
 
   @override
   String get resetPasswordTitle => 'Reset Password';
 
   @override
-  String get resetPasswordDescription =>
-      'Enter your email to send a reset link';
+  String get resetPasswordDescription => 'Enter your email to send a reset link';
 
   @override
   String get sendResetLink => 'Send Link';
@@ -688,8 +678,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noResults => 'No results';
 
   @override
-  String get tryDifferentSearch =>
-      'Try searching with different words or change filters';
+  String get tryDifferentSearch => 'Try searching with different words or change filters';
 
   @override
   String egyptianPound(int amount) {
@@ -712,11 +701,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get examsAndMaterials => 'Exams & Materials';
 
   @override
-  String get pleaseEnterReviewTitleAndComment =>
-      'Please enter a title and a comment';
+  String get pleaseEnterReviewTitleAndComment => 'Please enter a title and a comment';
 
   @override
   String get reviewSubmittedSuccessfully => 'Review submitted successfully';
+
+  @override
+  String get errorLoadingReviews => 'Error loading reviews';
+
+  @override
+  String get errorSubmittingReview => 'Error submitting review';
 
   @override
   String get lifetimeAccess => 'Lifetime access to content';
@@ -758,12 +752,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lessonMaterialsTitle => 'Lesson materials';
 
   @override
-  String get selectLessonForMaterials =>
-      'Select a lesson to view its materials';
+  String get selectLessonForMaterials => 'Select a lesson to view its materials';
 
   @override
-  String get noPdfForCurrentLesson =>
-      'No PDF available for this lesson currently';
+  String get noPdfForCurrentLesson => 'No PDF available for this lesson currently';
 
   @override
   String get pdfFileTitle => 'PDF file';
@@ -781,6 +773,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pointsLabel => 'points';
+
+  @override
+  String get totalPointsLabel => 'Total points';
 
   @override
   String bestScore(String score) {
@@ -857,6 +852,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noQuestionsAvailable => 'No questions available in exam';
 
   @override
+  String get attemptIdMissing => 'Attempt ID is missing';
+
+  @override
   String get finishExamButton => 'Finish Exam';
 
   @override
@@ -899,8 +897,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noCertificatesYet => 'No certificates yet';
 
   @override
-  String get completeCoursesForCertificates =>
-      'Complete courses to get certified certificates';
+  String get completeCoursesForCertificates => 'Complete courses to get certified certificates';
 
   @override
   String get gettingDownloadLink => 'Getting download link...';
@@ -966,8 +963,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noCompletedExams => 'No completed exams';
 
   @override
-  String get startCompletingExams =>
-      'Start completing exams to see your results here';
+  String get startCompletingExams => 'Start completing exams to see your results here';
 
   @override
   String get ago => 'A while ago';
@@ -1058,10 +1054,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscribeNowButton => 'Subscribe Now';
 
   @override
-  String get enrolledCourse => 'Enrolled Course';
+  String get enrolledCourse => 'Course';
 
   @override
-  String get learningHours => 'Learning Hours';
+  String get learningHours => 'Hours';
 
   @override
   String get continueLearning => 'Continue Learning';
@@ -1073,8 +1069,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewMore => 'View More';
 
   @override
-  String get searchPlaceholder =>
-      'Search for a course, instructor, or topic...';
+  String get searchPlaceholder => 'Search for a course, instructor, or topic...';
 
   @override
   String get noResultsFound => 'No results found';
@@ -1207,8 +1202,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helloJacob => 'Hello, Jacob 👋';
 
   @override
-  String get startLearningJourneyMessage =>
-      'Start your learning journey and enroll in your first course';
+  String get startLearningJourneyMessage => 'Start your learning journey and enroll in your first course';
 
   @override
   String get learnEasily => 'Learn Easily';
@@ -1217,12 +1211,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continuousProgress => 'Continuous Progress';
 
   @override
-  String get discoverBestCourses =>
-      'Discover the best educational courses with professional teachers from around the world';
+  String get discoverBestCourses => 'Discover the best educational courses with professional teachers from around the world';
 
   @override
-  String get trackProgressAndGetCertificates =>
-      'Track your progress and get certified certificates upon course completion';
+  String get trackProgressAndGetCertificates => 'Track your progress and get certified certificates upon course completion';
 
   @override
   String get smartLearningPlatform => 'Smart Learning Platform';
@@ -1231,8 +1223,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certifiedAndSecure => 'Certified and Secure Platform';
 
   @override
-  String get everyDayNewOpportunity =>
-      'Ready to start a new journey and be a member of our family';
+  String get everyDayNewOpportunity => 'Ready to start a new journey and be a member of our family';
 
   @override
   String get version => 'v1.0.0';
@@ -1410,8 +1401,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadLinkNotAvailable => 'Download link not available';
 
   @override
-  String get downloadLinkObtained =>
-      'Download link obtained. Download will start soon...';
+  String get downloadLinkObtained => 'Download link obtained. Download will start soon...';
 
   @override
   String get courseWillOpenOffline => 'Course will open in offline mode';
@@ -1420,8 +1410,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseIdNotAvailable => 'Course ID not available';
 
   @override
-  String get downloadCoursesToWatchOffline =>
-      'Download courses to watch offline';
+  String get downloadCoursesToWatchOffline => 'Download courses to watch offline';
 
   @override
   String liveSessionsCount(int count, String status) {
@@ -1487,11 +1476,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verificationLinkLabel => 'Verification Link';
 
   @override
-  String get centerAttendance => 'Center Attendance';
+  String get centerAttendance => 'Attendance';
 
   @override
-  String get centerAttendanceDescription =>
-      'Show this QR code at the center to mark your attendance';
+  String get centerAttendanceDescription => 'Show this QR code to mark your attendance';
 
   @override
   String get loadingQrCode => 'Loading QR code...';
@@ -1500,8 +1488,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadingQrCode => 'Error loading QR code';
 
   @override
-  String get scanQrCodeInstruction =>
-      'Show this QR code to the center staff to mark your attendance';
+  String get scanQrCodeInstruction => 'Show this QR code to mark your attendance';
 
   @override
   String get refreshQrCode => 'Refresh QR Code';
@@ -1528,4 +1515,88 @@ class AppLocalizationsEn extends AppLocalizations {
   String studentsCount(int count) {
     return '$count students';
   }
+
+  @override
+  String get unableToLoadRecord => 'Unable to load recording';
+
+  @override
+  String get courseLessonsSectionVideos => 'Videos';
+
+  @override
+  String get courseLessonsSectionPdfs => 'PDFs';
+
+  @override
+  String get courseLessonsSectionExams => 'Exams';
+
+  @override
+  String get courseLessonsSectionImages => 'Images';
+
+  @override
+  String get courseLessonsSectionRecords => 'Recordings';
+
+  @override
+  String get fallbackLessonImageTitle => 'Image';
+
+  @override
+  String get fallbackLessonRecordTitle => 'Recording';
+
+  @override
+  String get fallbackImagesGalleryTitle => 'Images';
+
+  @override
+  String get noVideoQualityOptions => 'No video quality options available';
+
+  @override
+  String get onlyAutoQualityAvailable => 'Only automatic quality is available for this video';
+
+  @override
+  String get videoQualitySheetTitle => 'Video quality';
+
+  @override
+  String get videoQualityAuto => 'Auto';
+
+  @override
+  String get cannotDownloadVideoMissingIds => 'Cannot download this video';
+
+  @override
+  String get noVideoDownloadUrl => 'No video link available to download';
+
+  @override
+  String get videoDownloadedSuccessfully => 'Video downloaded successfully';
+
+  @override
+  String get videoDownloadFailed => 'Failed to download video';
+
+  @override
+  String videoDownloadError(String message) {
+    return 'Error downloading video: $message';
+  }
+
+  @override
+  String get videoDownloadStopped => 'Download stopped';
+
+  @override
+  String get defaultVideoLessonTitle => 'Video';
+
+  @override
+  String defaultCourseTitleWithId(String courseId) {
+    return 'Course $courseId';
+  }
+
+  @override
+  String get videoPlayerLoadError => 'Unable to load video';
+
+  @override
+  String downloadProgressPercent(int percent) {
+    return 'Downloading: $percent%';
+  }
+
+  @override
+  String get stopDownloading => 'Stop';
+
+  @override
+  String get noImageForLesson => 'No image available for this lesson';
+
+  @override
+  String get noRecordForLesson => 'No recording available for this lesson';
 }

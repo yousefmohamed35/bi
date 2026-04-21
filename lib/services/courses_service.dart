@@ -329,6 +329,7 @@ class CoursesService {
       final response = await ApiClient.instance.get(
         ApiEndpoints.courseLessonContent(courseId, lessonId),
         requireAuth: true,
+        logTag: 'courses.lessonContent',
       );
 
       if (kDebugMode) {
@@ -380,6 +381,66 @@ class CoursesService {
         throw Exception(
             response['message'] ?? 'Failed to update lesson progress');
       }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Track lesson progress for all lesson content types.
+  Future<Map<String, dynamic>> trackLessonProgress(
+    String courseId,
+    String lessonId, {
+    required String contentType,
+    required bool isCompleted,
+    int? watchedSeconds,
+    double? completionRatio,
+  }) async {
+    final payload = <String, dynamic>{
+      'content_type': contentType,
+      'is_completed': isCompleted,
+    };
+    if (watchedSeconds != null) {
+      payload['watched_seconds'] = watchedSeconds;
+    }
+    if (completionRatio != null) {
+      payload['completion_ratio'] = completionRatio;
+    }
+
+    try {
+      final response = await ApiClient.instance.post(
+        ApiEndpoints.trackLessonProgress(courseId, lessonId),
+        body: payload,
+        requireAuth: true,
+      );
+
+      if (response['success'] == true) {
+        final data = response['data'];
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+        return <String, dynamic>{};
+      }
+
+      // Fallback to legacy endpoint when track endpoint is unavailable.
+      if (isCompleted) {
+        final legacyResponse = await ApiClient.instance.post(
+          ApiEndpoints.courseLessonProgress(courseId, lessonId),
+          body: {
+            'watched_seconds': watchedSeconds ?? 0,
+            'is_completed': true,
+          },
+          requireAuth: true,
+        );
+        if (legacyResponse['success'] == true) {
+          final legacyData = legacyResponse['data'];
+          if (legacyData is Map<String, dynamic>) {
+            return legacyData;
+          }
+          return <String, dynamic>{};
+        }
+      }
+
+      throw Exception(response['message'] ?? 'Failed to track lesson progress');
     } catch (e) {
       rethrow;
     }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:developer' as developer;
 import 'package:go_router/go_router.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
@@ -20,6 +20,7 @@ class MyExamsScreen extends StatefulWidget {
 class _MyExamsScreenState extends State<MyExamsScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _completedExams = [];
+  int _totalPoints = 0;
 
   @override
   void initState() {
@@ -30,31 +31,65 @@ class _MyExamsScreenState extends State<MyExamsScreen> {
   Future<void> _loadExams() async {
     setState(() => _isLoading = true);
     try {
+      developer.log(
+        'REQUEST -> getMyExams()',
+        name: 'MyExamsScreen',
+      );
       final response = await ExamsService.instance.getMyExams();
-
-      if (kDebugMode) {
-        print('✅ Exams loaded: ${response['completed']?.length ?? 0}');
-      }
+      developer.log(
+        'RESPONSE <- getMyExams(): $response',
+        name: 'MyExamsScreen',
+      );
 
       setState(() {
-        if (response['completed'] is List) {
+        if (response['history'] is List) {
+          _completedExams = List<Map<String, dynamic>>.from(
+            response['history'] as List,
+          );
+        } else if (response['completed'] is List) {
           _completedExams = List<Map<String, dynamic>>.from(
             response['completed'] as List,
+          );
+        } else if (response['items'] is List) {
+          _completedExams = List<Map<String, dynamic>>.from(
+            response['items'] as List,
           );
         } else {
           _completedExams = [];
         }
+        _totalPoints = _extractTotalPoints(response);
         _isLoading = false;
       });
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error loading exams: $e');
-      }
+      developer.log(
+        'RESPONSE <- getMyExams() ERROR: $e',
+        name: 'MyExamsScreen',
+      );
       setState(() {
         _completedExams = [];
+        _totalPoints = 0;
         _isLoading = false;
       });
     }
+  }
+
+  int _asInt(dynamic value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? fallback;
+    return fallback;
+  }
+
+  int _extractTotalPoints(Map<String, dynamic> response) {
+    if (response['summary'] is Map<String, dynamic>) {
+      final summary = response['summary'] as Map<String, dynamic>;
+      return _asInt(
+        summary['total_points'] ?? summary['totalPoints'] ?? summary['points'],
+      );
+    }
+    return _asInt(
+      response['total_points'] ?? response['totalPoints'] ?? response['points'],
+    );
   }
 
   String _formatDate(BuildContext context, String? dateString) {
@@ -98,178 +133,189 @@ class _MyExamsScreenState extends State<MyExamsScreen> {
     return Scaffold(
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            // Header - matches React: bg-[var(--orange)] rounded-b-[3rem] pt-4 pb-8 px-4
-            Container(
-              decoration: const BoxDecoration(
-                color: AppColors.orange, // Orange header!
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(AppRadius.largeCard),
-                  bottomRight: Radius.circular(AppRadius.largeCard),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Header - matches React: bg-[var(--orange)] rounded-b-[3rem] pt-4 pb-8 px-4
+              Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.orange, // Orange header!
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(AppRadius.largeCard),
+                    bottomRight: Radius.circular(AppRadius.largeCard),
+                  ),
                 ),
-              ),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 16, // pt-4
-                bottom: 32, // pb-8
-                left: 16, // px-4
-                right: 16,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Back button and title - matches React: gap-4 mb-4
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: Container(
-                          width: 40, // w-10
-                          height: 40, // h-10
-                          decoration: const BoxDecoration(
-                            color: AppColors.whiteOverlay20, // bg-white/20
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chevron_right,
-                            color: Colors.white,
-                            size: 20, // w-5 h-5
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16), // gap-4
-                      Text(
-                        context.l10n.myExams,
-                        style: AppTextStyles.h2(color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16), // mb-4
-                  Text(
-                    context.l10n.viewAllCompletedExams,
-                    style: AppTextStyles.bodyMedium(
-                      color: Colors.white.withOpacity(0.7), // white/70
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Content - matches React: px-4 -mt-6 mb-6 then space-y-4
-            Expanded(
-              child: Transform.translate(
-                offset: const Offset(0, -24), // -mt-6
-                child: _isLoading
-                    ? _buildLoadingState(context)
-                    : _completedExams.isEmpty
-                        ? _buildEmptyState()
-                        : RefreshIndicator(
-                            onRefresh: _loadExams,
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16), // px-4
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Column(
-                                children: [
-                                  // Stats Card - matches React: bg-white rounded-3xl p-5 shadow-lg grid grid-cols-3
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        bottom: 24), // mb-6
-                                    padding: const EdgeInsets.all(20), // p-5
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.surface,
-                                      borderRadius: BorderRadius.circular(
-                                          24), // rounded-3xl
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: colorScheme.shadow
-                                              .withOpacity(0.1),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 6),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        // Total exams
-                                        Expanded(
-                                          child: Column(
-                                            children: [
-                                              Text(
-                                                '${_completedExams.length}',
-                                                style: AppTextStyles.h2(
-                                                  color: colorScheme.primary,
-                                                ),
-                                              ),
-                                              Text(
-                                                context.l10n.totalExams,
-                                                style: AppTextStyles.labelSmall(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        // Passed
-                                        Expanded(
-                                          child: Column(
-                                            children: [
-                                              Text(
-                                                '$passedCount',
-                                                style: AppTextStyles.h2(
-                                                  color: Colors.green,
-                                                ),
-                                              ),
-                                              Text(
-                                                context.l10n.passed,
-                                                style: AppTextStyles.labelSmall(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        // Failed
-                                        Expanded(
-                                          child: Column(
-                                            children: [
-                                              Text(
-                                                '$failedCount',
-                                                style: AppTextStyles.h2(
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                              Text(
-                                                context.l10n.failed,
-                                                style: AppTextStyles.labelSmall(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Exams List - matches React: space-y-4
-                                  ..._completedExams.map(
-                                      (exam) => _buildExamCard(context, exam)),
-
-                                  const SizedBox(height: 32),
-                                ],
-                              ),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 16, // pt-4
+                  bottom: 32, // pb-8
+                  left: 16, // px-4
+                  right: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Back button and title - matches React: gap-4 mb-4
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: Container(
+                            width: 40, // w-10
+                            height: 40, // h-10
+                            decoration: const BoxDecoration(
+                              color: AppColors.whiteOverlay20, // bg-white/20
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right,
+                              color: Colors.white,
+                              size: 20, // w-5 h-5
                             ),
                           ),
+                        ),
+                        const SizedBox(width: 16), // gap-4
+                        Text(
+                          context.l10n.myExams,
+                          style: AppTextStyles.h2(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16), // mb-4
+                    Text(
+                      context.l10n.viewAllCompletedExams,
+                      style: AppTextStyles.bodyMedium(
+                        color: Colors.white.withOpacity(0.7), // white/70
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              // Content - matches React: px-4 -mt-6 mb-6 then space-y-4
+              Transform.translate(
+                offset: const Offset(0, -24), // -mt-6
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16), // px-4
+                  child: Column(
+                    children: [
+                      if (_isLoading) _buildLoadingState(context),
+                      if (!_isLoading && _completedExams.isEmpty)
+                        _buildEmptyState(),
+                      if (!_isLoading && _completedExams.isNotEmpty) ...[
+                        // Stats Card - matches React: bg-white rounded-3xl p-5 shadow-lg grid grid-cols-3
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 24), // mb-6
+                          padding: const EdgeInsets.all(20), // p-5
+                          decoration: BoxDecoration(
+                            color: colorScheme.surface,
+                            borderRadius:
+                                BorderRadius.circular(24), // rounded-3xl
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.shadow.withOpacity(0.1),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Total exams
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${_completedExams.length}',
+                                      style: AppTextStyles.h2(
+                                        color: colorScheme.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      context.l10n.totalExams,
+                                      style: AppTextStyles.labelSmall(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Passed
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '$passedCount',
+                                      style: AppTextStyles.h2(
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                    Text(
+                                      context.l10n.passed,
+                                      style: AppTextStyles.labelSmall(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Failed
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '$failedCount',
+                                      style: AppTextStyles.h2(
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                    Text(
+                                      context.l10n.failed,
+                                      style: AppTextStyles.labelSmall(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Points
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '$_totalPoints',
+                                      style: AppTextStyles.h2(
+                                        color: Colors.amber[700],
+                                      ),
+                                    ),
+                                    Text(
+                                      context.l10n.totalPointsLabel,
+                                      style: AppTextStyles.labelSmall(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Exams List - matches React: space-y-4
+                        ..._completedExams
+                            .map((exam) => _buildExamCard(context, exam)),
+                      ],
+                      const SizedBox(height: 140),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -286,7 +332,11 @@ class _MyExamsScreenState extends State<MyExamsScreen> {
         0;
     final correctAnswers =
         exam['correct_answers'] as int? ?? exam['correctAnswers'] as int? ?? 0;
-    final examTitle = exam['title']?.toString() ?? context.l10n.exam;
+    final examTitle =
+        context.localizedApiText(exam, 'title', fallback: context.l10n.exam);
+    final earnedPoints = _asInt(
+      exam['earned_points'] ?? exam['points_awarded'] ?? exam['points'],
+    );
     final completedAt = exam['completed_at']?.toString() ??
         exam['submitted_at']?.toString() ??
         exam['date']?.toString();
@@ -374,6 +424,13 @@ class _MyExamsScreenState extends State<MyExamsScreen> {
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '+$earnedPoints ${context.l10n.pointsLabel}',
+                    style: AppTextStyles.labelSmall(
+                      color: Colors.amber[700],
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -389,7 +446,7 @@ class _MyExamsScreenState extends State<MyExamsScreen> {
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerRight,
-              widthFactor: score / 100,
+              widthFactor: (score / 100).clamp(0.0, 1.0),
               child: Container(
                 decoration: BoxDecoration(
                   color: passed ? Colors.green : Colors.red,

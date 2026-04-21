@@ -59,12 +59,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get warningTitle => 'تحذير';
 
   @override
-  String get warningResellText =>
-      'تحذير: يُحظر إعادة بيع المحتوى أو استخدامه في أي أغراض تجارية وفقًا للقانون المصري.';
+  String get warningResellText => 'تحذير: يُحظر إعادة بيع المحتوى أو استخدامه في أي أغراض تجارية وفقًا للقانون المصري.';
 
   @override
-  String get warningWelcomeText =>
-      'وأهلاً بك لتكون واحدًا من عائلة بيمارستانيان وعضواً في أسرتنا الصغيرة.';
+  String get warningWelcomeText => 'وأهلاً بك لتكون واحدًا من عائلة بيمارستانيان وعضواً في أسرتنا الصغيرة.';
 
   @override
   String get chat => 'الدردشة';
@@ -99,8 +97,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get failedToLoadFile =>
-      'فشل تحميل الملف. يرجى التحقق من الاتصال بالإنترنت أو أن الملف موجود.';
+  String get failedToLoadFile => 'فشل تحميل الملف. يرجى التحقق من الاتصال بالإنترنت أو أن الملف موجود.';
 
   @override
   String errorLoadingFileWithDetails(String error) {
@@ -296,8 +293,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get course => 'دورة';
 
   @override
-  String get courseSuitable =>
-      'الدورة مناسبة للمبتدئين والمحترفين على حد سواء.';
+  String get courseSuitable => 'الدورة مناسبة للمبتدئين والمحترفين على حد سواء.';
 
   @override
   String get enrolledSuccessfully => 'تم الاشتراك في الدورة بنجاح';
@@ -360,8 +356,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get downloads => 'التحميلات';
 
   @override
-  String get downloadLinkReceived =>
-      'تم الحصول على رابط التحميل. سيتم التحميل قريباً...';
+  String get downloadLinkReceived => 'تم الحصول على رابط التحميل. سيتم التحميل قريباً...';
 
   @override
   String errorDownloading(String error) {
@@ -545,12 +540,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get gallery => 'المعرض';
 
   @override
-  String get cameraPermissionDenied =>
-      'تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا من الإعدادات';
+  String get cameraPermissionDenied => 'تم رفض إذن الكاميرا. يرجى السماح بالوصول إلى الكاميرا من الإعدادات';
 
   @override
-  String get galleryPermissionDenied =>
-      'تم رفض إذن المعرض. يرجى السماح بالوصول إلى الصور من الإعدادات';
+  String get galleryPermissionDenied => 'تم رفض إذن المعرض. يرجى السماح بالوصول إلى الصور من الإعدادات';
 
   @override
   String get errorPickingImage => 'حدث خطأ أثناء اختيار الصورة';
@@ -599,15 +592,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sentSuccessfully => 'تم الإرسال بنجاح!';
 
   @override
-  String get resetPasswordSent =>
-      'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني';
+  String get resetPasswordSent => 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني';
 
   @override
   String get resetPasswordTitle => 'استعادة كلمة المرور';
 
   @override
-  String get resetPasswordDescription =>
-      'أدخل بريدك الإلكتروني لإرسال رابط إعادة تعيين';
+  String get resetPasswordDescription => 'أدخل بريدك الإلكتروني لإرسال رابط إعادة تعيين';
 
   @override
   String get sendResetLink => 'إرسال الرابط';
@@ -701,7 +692,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get courseDetailsTitle => 'Course Details';
 
   @override
-  String get about => 'About';
+  String get about => 'نبذة';
 
   @override
   String get lessonsAndChapters => 'Lessons & Chapters';
@@ -710,11 +701,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get examsAndMaterials => 'Exams & Materials';
 
   @override
-  String get pleaseEnterReviewTitleAndComment =>
-      'Please enter a title and a comment';
+  String get pleaseEnterReviewTitleAndComment => 'Please enter a title and a comment';
 
   @override
   String get reviewSubmittedSuccessfully => 'Review submitted successfully';
+
+  @override
+  String get errorLoadingReviews => 'حدث خطأ أثناء تحميل المراجعات';
+
+  @override
+  String get errorSubmittingReview => 'حدث خطأ أثناء إرسال المراجعة';
 
   @override
   String get lifetimeAccess => 'Lifetime access to content';
@@ -756,12 +752,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get lessonMaterialsTitle => 'Lesson materials';
 
   @override
-  String get selectLessonForMaterials =>
-      'Select a lesson to view its materials';
+  String get selectLessonForMaterials => 'Select a lesson to view its materials';
 
   @override
-  String get noPdfForCurrentLesson =>
-      'No PDF available for this lesson currently';
+  String get noPdfForCurrentLesson => 'No PDF available for this lesson currently';
 
   @override
   String get pdfFileTitle => 'PDF file';
@@ -778,7 +772,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get pointsLabel => 'points';
+  String get pointsLabel => 'نقاط';
+
+  @override
+  String get totalPointsLabel => 'إجمالي النقاط';
 
   @override
   String bestScore(String score) {
@@ -791,7 +788,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get attemptsExhausted => 'Attempts exhausted';
+  String get attemptsExhausted => 'تم استنفاد عدد المحاولات';
 
   @override
   String get youAreCourseInstructor => 'You are the instructor of this course';
@@ -855,6 +852,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noQuestionsAvailable => 'لا توجد أسئلة متاحة في الامتحان';
 
   @override
+  String get attemptIdMissing => 'معرف محاولة الامتحان غير متوفر';
+
+  @override
   String get finishExamButton => 'إنهاء الامتحان';
 
   @override
@@ -897,8 +897,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noCertificatesYet => 'لا توجد شهادات بعد';
 
   @override
-  String get completeCoursesForCertificates =>
-      'أكمل الدورات للحصول على شهادات معتمدة';
+  String get completeCoursesForCertificates => 'أكمل الدورات للحصول على شهادات معتمدة';
 
   @override
   String get gettingDownloadLink => 'جاري الحصول على رابط التحميل...';
@@ -964,8 +963,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noCompletedExams => 'لا توجد اختبارات مكتملة';
 
   @override
-  String get startCompletingExams =>
-      'ابدأ في إكمال الاختبارات لرؤية نتائجك هنا';
+  String get startCompletingExams => 'ابدأ في إكمال الاختبارات لرؤية نتائجك هنا';
 
   @override
   String get ago => 'منذ فترة';
@@ -1204,8 +1202,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get helloJacob => 'مرحباً، يعقوب 👋';
 
   @override
-  String get startLearningJourneyMessage =>
-      'ابدأ رحلة التعلم واشترك في دورتك الأولى';
+  String get startLearningJourneyMessage => 'ابدأ رحلة التعلم واشترك في دورتك الأولى';
 
   @override
   String get learnEasily => 'تعلم بسهولة';
@@ -1214,12 +1211,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get continuousProgress => 'تقدم مستمر';
 
   @override
-  String get discoverBestCourses =>
-      'اكتشف أفضل الدورات التعليمية مع مدرسين محترفين من جميع أنحاء العالم';
+  String get discoverBestCourses => 'اكتشف أفضل الدورات التعليمية مع مدرسين محترفين من جميع أنحاء العالم';
 
   @override
-  String get trackProgressAndGetCertificates =>
-      'تابع تقدمك واحصل على شهادات معتمدة عند إتمام الدورات';
+  String get trackProgressAndGetCertificates => 'تابع تقدمك واحصل على شهادات معتمدة عند إتمام الدورات';
 
   @override
   String get smartLearningPlatform => 'منصة التعليم الذكية';
@@ -1406,8 +1401,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get downloadLinkNotAvailable => 'رابط التحميل غير متاح';
 
   @override
-  String get downloadLinkObtained =>
-      'تم الحصول على رابط التحميل. سيتم التحميل قريباً...';
+  String get downloadLinkObtained => 'تم الحصول على رابط التحميل. سيتم التحميل قريباً...';
 
   @override
   String get courseWillOpenOffline => 'سيتم فتح الدورة في وضع عدم الاتصال';
@@ -1416,8 +1410,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get courseIdNotAvailable => 'معرف الدورة غير متاح';
 
   @override
-  String get downloadCoursesToWatchOffline =>
-      'حمّل الدورات لمشاهدتها بدون إنترنت';
+  String get downloadCoursesToWatchOffline => 'حمّل الدورات لمشاهدتها بدون إنترنت';
 
   @override
   String liveSessionsCount(int count, String status) {
@@ -1477,11 +1470,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get verificationLinkLabel => 'رابط التحقق';
 
   @override
-  String get centerAttendance => 'حضور السنتر';
+  String get centerAttendance => 'حضور';
 
   @override
-  String get centerAttendanceDescription =>
-      'اعرض هذا الكود عند السنتر لتسجيل حضورك';
+  String get centerAttendanceDescription => 'اعرض هذا الكود لتسجيل حضورك';
 
   @override
   String get loadingQrCode => 'جاري تحميل الكود...';
@@ -1490,8 +1482,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get errorLoadingQrCode => 'حدث خطأ أثناء تحميل الكود';
 
   @override
-  String get scanQrCodeInstruction =>
-      'اعرض هذا الكود لموظفي السنتر لتسجيل حضورك';
+  String get scanQrCodeInstruction => 'اعرض هذا الكود لتسجيل حضورك';
 
   @override
   String get refreshQrCode => 'تحديث الكود';
@@ -1518,4 +1509,88 @@ class AppLocalizationsAr extends AppLocalizations {
   String studentsCount(int count) {
     return '$count طالب';
   }
+
+  @override
+  String get unableToLoadRecord => 'تعذر تحميل التسجيل';
+
+  @override
+  String get courseLessonsSectionVideos => 'فيديوهات';
+
+  @override
+  String get courseLessonsSectionPdfs => 'ملفات PDF';
+
+  @override
+  String get courseLessonsSectionExams => 'الاختبارات';
+
+  @override
+  String get courseLessonsSectionImages => 'صور';
+
+  @override
+  String get courseLessonsSectionRecords => 'تسجيلات';
+
+  @override
+  String get fallbackLessonImageTitle => 'صورة';
+
+  @override
+  String get fallbackLessonRecordTitle => 'تسجيل';
+
+  @override
+  String get fallbackImagesGalleryTitle => 'صور';
+
+  @override
+  String get noVideoQualityOptions => 'لا توجد خيارات جودة فيديو';
+
+  @override
+  String get onlyAutoQualityAvailable => 'جودة تلقائية فقط متاحة لهذا الفيديو حالياً';
+
+  @override
+  String get videoQualitySheetTitle => 'جودة الفيديو';
+
+  @override
+  String get videoQualityAuto => 'تلقائي';
+
+  @override
+  String get cannotDownloadVideoMissingIds => 'لا يمكن تحميل هذا الفيديو';
+
+  @override
+  String get noVideoDownloadUrl => 'لا يوجد رابط فيديو للتحميل';
+
+  @override
+  String get videoDownloadedSuccessfully => 'تم تحميل الفيديو بنجاح';
+
+  @override
+  String get videoDownloadFailed => 'فشل تحميل الفيديو';
+
+  @override
+  String videoDownloadError(String message) {
+    return 'خطأ في تحميل الفيديو: $message';
+  }
+
+  @override
+  String get videoDownloadStopped => 'تم إيقاف التحميل';
+
+  @override
+  String get defaultVideoLessonTitle => 'فيديو';
+
+  @override
+  String defaultCourseTitleWithId(String courseId) {
+    return 'كورس $courseId';
+  }
+
+  @override
+  String get videoPlayerLoadError => 'لا يمكن تحميل الفيديو';
+
+  @override
+  String downloadProgressPercent(int percent) {
+    return 'جاري التحميل: $percent%';
+  }
+
+  @override
+  String get stopDownloading => 'إيقاف';
+
+  @override
+  String get noImageForLesson => 'لا توجد صورة لهذا الدرس';
+
+  @override
+  String get noRecordForLesson => 'لا يوجد تسجيل لهذا الدرس';
 }

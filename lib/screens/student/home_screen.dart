@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../widgets/bottom_nav.dart';
@@ -30,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final _searchController = TextEditingController();
   late AnimationController _bannerController;
   late Animation<double> _bannerAnimation;
+  Future<void>? _ongoingLoadFuture;
 
   // API Data
   bool _isLoading = true;
@@ -58,7 +60,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _loadHomeData();
   }
 
-  Future<void> _loadHomeData() async {
+  Future<void> _loadHomeData() {
+    // Prevent overlapping loads (initial load + repeated pull-to-refresh).
+    if (_ongoingLoadFuture != null) {
+      return _ongoingLoadFuture!;
+    }
+
+    final future = _loadHomeDataInternal();
+    _ongoingLoadFuture = future;
+    future.whenComplete(() {
+      _ongoingLoadFuture = null;
+    });
+    return future;
+  }
+
+  Future<void> _loadHomeDataInternal() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -87,7 +104,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
           print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         }
-        setState(() => _userProfile = profile);
+        if (mounted) {
+          setState(() => _userProfile = profile);
+        }
       } catch (e) {
         // User might not be logged in, continue
         if (kDebugMode) {
@@ -102,8 +121,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           unreadOnly: true,
           perPage: 1,
         );
-        setState(() =>
-            _notificationsCount = notifications['meta']?['unread_count'] ?? 0);
+        if (mounted) {
+          setState(() => _notificationsCount =
+              notifications['meta']?['unread_count'] ?? 0);
+        }
       } catch (e) {
         // User might not be logged in, continue
       }
@@ -127,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         teachers = List<Map<String, dynamic>>.from(kSampleTeachers);
       }
 
+      if (!mounted) return;
       setState(() {
         _homeData = homeData;
         _featuredCourses = List<Map<String, dynamic>>.from(
@@ -147,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     } catch (e) {
       // Show error message instead of fallback data
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
@@ -232,6 +255,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Stack(
+        fit: StackFit.expand,
         children: [
           Container(
             constraints: const BoxConstraints(maxWidth: 430),
@@ -240,141 +264,142 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ? (MediaQuery.of(context).size.width - 430) / 2
                   : 0,
             ),
-            child: Column(
-              children: [
-                // Enhanced Header
-                _buildHeader(statusBarHeight),
-                const SizedBox(height: 15),
+            child: _errorMessage != null
+                ? Column(
+                    children: [
+                      // Enhanced Header
+                      _buildHeader(statusBarHeight),
+                      const SizedBox(height: 15),
+                      Expanded(child: _buildErrorView()),
+                    ],
+                  )
+                : SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Enhanced Header now scrolls with the page
+                        _buildHeader(statusBarHeight),
+                        const SizedBox(height: 15),
+                        Transform.translate(
+                          offset: const Offset(0, -10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 3D Banner
+                              if (_isLoading)
+                                _build3DBannerSkeleton()
+                              else
+                                _build3DBanner(),
 
-                // Content
-                Expanded(
-                  child: Transform.translate(
-                    offset: const Offset(0, -10),
-                    child: _errorMessage != null
-                        ? _buildErrorView()
-                        : SingleChildScrollView(
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            physics: const BouncingScrollPhysics(),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // 3D Banner
-                                if (_isLoading)
-                                  _build3DBannerSkeleton()
-                                else
-                                  _build3DBanner(),
+                              const SizedBox(height: 24),
 
-                                const SizedBox(height: 24),
+                              // Quick Stats Row
+                              if (_isLoading)
+                                _buildQuickStatsSkeleton()
+                              else
+                                _buildQuickStats(),
 
-                                // Quick Stats Row
-                                if (_isLoading)
-                                  _buildQuickStatsSkeleton()
-                                else
-                                  _buildQuickStats(),
+                              const SizedBox(height: 24),
 
-                                const SizedBox(height: 24),
-
-                                // Teachers slider
-                                _buildSectionHeader(l10n.teachers, () {
-                                  context.push(
-                                    RouteNames.teachers,
-                                    extra: _teachers,
-                                  );
+                              // Featured Courses
+                              if (_isLoading) ...[
+                                _buildSectionHeader(
+                                    AppLocalizations.of(context)!
+                                        .featuredCourses,
+                                    () {}),
+                                const SizedBox(height: 16),
+                                _buildFeaturedCoursesSkeleton(),
+                                const SizedBox(height: 28),
+                              ] else if (_featuredCourses.isNotEmpty) ...[
+                                _buildSectionHeader(
+                                    AppLocalizations.of(context)!
+                                        .featuredCourses, () {
+                                  context.push(RouteNames.allCourses);
                                 }),
                                 const SizedBox(height: 16),
-                                if (_isLoading && _teachers.isEmpty)
-                                  _buildTeachersSliderSkeleton()
-                                else
-                                  _buildTeachersSlider(l10n),
-
+                                _buildFeaturedCourses(),
                                 const SizedBox(height: 28),
-
-                                // Featured Courses
-                                if (_isLoading) ...[
-                                  _buildSectionHeader(
-                                      AppLocalizations.of(context)!
-                                          .featuredCourses,
-                                      () {}),
-                                  const SizedBox(height: 16),
-                                  _buildFeaturedCoursesSkeleton(),
-                                  const SizedBox(height: 28),
-                                ] else if (_featuredCourses.isNotEmpty) ...[
-                                  _buildSectionHeader(
-                                      AppLocalizations.of(context)!
-                                          .featuredCourses, () {
-                                    context.push(RouteNames.allCourses);
-                                  }),
-                                  const SizedBox(height: 16),
-                                  _buildFeaturedCourses(),
-                                  const SizedBox(height: 28),
-                                ],
-
-                                // Categories
-                                if (_isLoading) ...[
-                                  _buildSectionHeader(
-                                      AppLocalizations.of(context)!.categories,
-                                      () {}),
-                                  const SizedBox(height: 16),
-                                  _buildCategoriesSkeleton(),
-                                  const SizedBox(height: 28),
-                                ] else if (_categories.isNotEmpty) ...[
-                                  _buildSectionHeader(
-                                      AppLocalizations.of(context)!.categories,
-                                      () {
-                                    context.push(RouteNames.categories);
-                                  }),
-                                  const SizedBox(height: 16),
-                                  _buildCategories(),
-                                  const SizedBox(height: 28),
-                                ],
-
-                                // Continue Learning
-                                if (_isLoading) ...[
-                                  _buildSectionHeader(
-                                      AppLocalizations.of(context)!
-                                          .continueLearning,
-                                      () {}),
-                                  const SizedBox(height: 16),
-                                  _buildContinueLearningSkeleton(),
-                                  const SizedBox(height: 28),
-                                ] else if (_continueLearning.isNotEmpty) ...[
-                                  _buildSectionHeader(
-                                      AppLocalizations.of(context)!
-                                          .continueLearning, () {
-                                    context.push(RouteNames.enrolled);
-                                  }),
-                                  const SizedBox(height: 16),
-                                  _buildContinueLearning(),
-                                  const SizedBox(height: 28),
-                                ],
-
-                                // Popular Courses
-                                if (_isLoading) ...[
-                                  _buildSectionHeader(
-                                      AppLocalizations.of(context)!
-                                          .recommendedCourses,
-                                      () {}),
-                                  const SizedBox(height: 16),
-                                  _buildRecommendedCoursesSkeleton(),
-                                ] else if (_popularCourses.isNotEmpty) ...[
-                                  _buildSectionHeader(
-                                      AppLocalizations.of(context)!
-                                          .recommendedCourses, () {
-                                    context.push(RouteNames.allCourses);
-                                  }),
-                                  const SizedBox(height: 16),
-                                  _buildRecommendedCourses(),
-                                ],
-
-                                const SizedBox(height: 140),
                               ],
-                            ),
+                              _buildSectionHeader(l10n.teachers, () {
+                                context.push(
+                                  RouteNames.teachers,
+                                  extra: _teachers,
+                                );
+                              }),
+                              const SizedBox(height: 16),
+                              if (_isLoading && _teachers.isEmpty)
+                                _buildTeachersSliderSkeleton()
+                              else
+                                _buildTeachersSlider(l10n),
+
+                              const SizedBox(height: 28),
+                              // Categories
+                              if (_isLoading) ...[
+                                _buildSectionHeader(
+                                    AppLocalizations.of(context)!.categories,
+                                    () {}),
+                                const SizedBox(height: 16),
+                                _buildCategoriesSkeleton(),
+                                const SizedBox(height: 28),
+                              ] else if (_categories.isNotEmpty) ...[
+                                _buildSectionHeader(
+                                    AppLocalizations.of(context)!.categories,
+                                    () {
+                                  context.push(RouteNames.categories);
+                                }),
+                                const SizedBox(height: 16),
+                                _buildCategories(),
+                                const SizedBox(height: 28),
+                              ],
+
+                              // Continue Learning
+                              if (_isLoading) ...[
+                                _buildSectionHeader(
+                                    AppLocalizations.of(context)!
+                                        .continueLearning,
+                                    () {}),
+                                const SizedBox(height: 16),
+                                _buildContinueLearningSkeleton(),
+                                const SizedBox(height: 28),
+                              ] else if (_continueLearning.isNotEmpty) ...[
+                                _buildSectionHeader(
+                                    AppLocalizations.of(context)!
+                                        .continueLearning, () {
+                                  context.push(RouteNames.enrolled);
+                                }),
+                                const SizedBox(height: 16),
+                                _buildContinueLearning(),
+                                const SizedBox(height: 28),
+                              ],
+
+                              // Popular Courses
+                              if (_isLoading) ...[
+                                _buildSectionHeader(
+                                    AppLocalizations.of(context)!
+                                        .recommendedCourses,
+                                    () {}),
+                                const SizedBox(height: 16),
+                                _buildRecommendedCoursesSkeleton(),
+                              ] else if (_popularCourses.isNotEmpty) ...[
+                                _buildSectionHeader(
+                                    AppLocalizations.of(context)!
+                                        .recommendedCourses, () {
+                                  context.push(RouteNames.allCourses);
+                                }),
+                                const SizedBox(height: 16),
+                                _buildRecommendedCourses(),
+                              ],
+
+                              const SizedBox(height: 140),
+                            ],
                           ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
           ),
 
           // Bottom Navigation
@@ -449,7 +474,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               top: statusBarHeight + 16,
               left: 20,
               right: 20,
-              bottom: 56,
+              bottom: 20,
             ),
             child: Column(
               children: [
@@ -1068,28 +1093,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final totalHours = userSummary?['total_hours'] ?? 0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _buildStatCard(
-            icon: Icons.play_circle_fill_rounded,
-            value: enrolledCourses.toString(),
-            label: AppLocalizations.of(context)!.enrolledCourse,
-            color: const Color(0xFF10B981),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.play_circle_fill_rounded,
+              value: enrolledCourses.toString(),
+              label: AppLocalizations.of(context)!.enrolledCourse,
+              color: const Color(0xFF10B981),
+            ),
           ),
           const SizedBox(width: 12),
-          _buildStatCard(
-            icon: Icons.emoji_events_rounded,
-            value: certificates.toString(),
-            label: AppLocalizations.of(context)!.certificates,
-            color: const Color(0xFFF59E0B),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.emoji_events_rounded,
+              value: certificates.toString(),
+              label: AppLocalizations.of(context)!.certificates,
+              color: const Color(0xFFF59E0B),
+            ),
           ),
           const SizedBox(width: 12),
-          _buildStatCard(
-            icon: Icons.access_time_filled_rounded,
-            value: totalHours.toString(),
-            label: AppLocalizations.of(context)!.learningHours,
-            color: const Color(0xFF6366F1),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.access_time_filled_rounded,
+              value: totalHours.toString(),
+              label: AppLocalizations.of(context)!.learningHours,
+              color: const Color(0xFF6366F1),
+            ),
           ),
         ],
       ),
@@ -1102,123 +1133,133 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Skeletonizer(
         enabled: true,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: 132,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 20,
-                      width: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(6),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 20,
+                        width: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      height: 11,
-                      width: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(6),
+                      const SizedBox(height: 4),
+                      Container(
+                        height: 11,
+                        width: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 20,
-                      width: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      height: 11,
-                      width: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(18),
+              child: SizedBox(
+                height: 132,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 20,
+                        width: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        height: 11,
+                        width: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SizedBox(
+                height: 132,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 20,
-                      width: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(6),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 20,
+                        width: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      height: 11,
-                      width: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(6),
+                      const SizedBox(height: 4),
+                      Container(
+                        height: 11,
+                        width: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1234,7 +1275,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required String label,
     required Color color,
   }) {
-    return Expanded(
+    return SizedBox(
+      height: 132,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -1249,6 +1291,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(10),
@@ -1261,6 +1304,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             const SizedBox(height: 8),
             Text(
               value,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.cairo(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -1269,6 +1315,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             Text(
               label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.cairo(
                 fontSize: 11,
                 color: Theme.of(context).brightness == Brightness.dark
@@ -1388,7 +1437,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                teacher['name']?.toString() ?? '',
+                                context.localizedApiText(teacher, 'name'),
                                 style: GoogleFonts.cairo(
                                   fontSize: screenWidth < 360 ? 13 : 14,
                                   fontWeight: FontWeight.bold,
@@ -1399,7 +1448,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                teacher['title']?.toString() ?? '',
+                                context.localizedApiText(teacher, 'title'),
                                 style: GoogleFonts.cairo(
                                   fontSize: screenWidth < 360 ? 11 : 12,
                                   color: Theme.of(context).brightness ==
@@ -1420,7 +1469,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     SizedBox(height: screenWidth < 360 ? 10 : 12),
                     Text(
-                      teacher['bio']?.toString() ?? '',
+                      context.localizedApiText(teacher, 'bio'),
                       style: GoogleFonts.cairo(
                         fontSize: screenWidth < 360 ? 11 : 12,
                         color: Theme.of(context).brightness == Brightness.dark
@@ -1850,7 +1899,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    (cat['name'] ?? cat['label'] ?? '').toString(),
+                    context.localizedApiText(
+                      cat,
+                      'name',
+                      fallback: (cat['label'] ?? '').toString(),
+                    ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -2002,9 +2055,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          course['category']?['name'] ??
-                              course['category'] ??
-                              '',
+                          course['category'] is Map
+                              ? context.localizedApiText(
+                                  Map<String, dynamic>.from(
+                                    course['category'] as Map,
+                                  ),
+                                  'name',
+                                )
+                              : (course['category'] ?? '').toString(),
                           style: GoogleFonts.cairo(
                               fontSize: 10,
                               color: AppColors.primaryMap,
@@ -2032,7 +2090,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    course['title'] ?? '',
+                    context.localizedApiText(course, 'title'),
                     style: GoogleFonts.cairo(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -2043,7 +2101,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    course['instructor']?['name'] ?? course['instructor'] ?? '',
+                    course['instructor'] is Map
+                        ? context.localizedApiText(
+                            Map<String, dynamic>.from(
+                              course['instructor'] as Map,
+                            ),
+                            'name',
+                          )
+                        : (course['instructor'] ?? '').toString(),
                     style: GoogleFonts.cairo(
                         fontSize: 12,
                         color: Theme.of(context).brightness == Brightness.dark
@@ -2068,7 +2133,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           size: 14, color: Colors.grey[400]),
                       const SizedBox(width: 4),
                       Text(
-                        '${course['duration_hours'] ?? course['hours'] ?? 0}س',
+                        '${course['duration_hours'] ?? course['hours'] ?? 0}${AppLocalizations.of(context)!.hourShort}',
                         style: GoogleFonts.cairo(
                             fontSize: 11,
                             color:
@@ -2464,12 +2529,18 @@ class _SearchOverlayState extends State<_SearchOverlay> {
   List<Map<String, dynamic>> get _filteredCourses {
     if (_query.isEmpty) return widget.allCourses;
     return widget.allCourses.where((course) {
-      final title = course['title']?.toString() ?? '';
+      final title = context.localizedApiText(course, 'title');
       final instructor = course['instructor'] is Map
-          ? (course['instructor'] as Map)['name']?.toString() ?? ''
+          ? context.localizedApiText(
+              Map<String, dynamic>.from(course['instructor'] as Map),
+              'name',
+            )
           : course['instructor']?.toString() ?? '';
       final category = course['category'] is Map
-          ? (course['category'] as Map)['name']?.toString() ?? ''
+          ? context.localizedApiText(
+              Map<String, dynamic>.from(course['category'] as Map),
+              'name',
+            )
           : course['category']?.toString() ?? '';
 
       return title.contains(_query) ||
@@ -2648,7 +2719,7 @@ class _SearchOverlayState extends State<_SearchOverlay> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      course['title']?.toString() ?? '',
+                                      context.localizedApiText(course, 'title'),
                                       style: GoogleFonts.cairo(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
@@ -2659,10 +2730,12 @@ class _SearchOverlayState extends State<_SearchOverlay> {
                                     const SizedBox(height: 4),
                                     Text(
                                       course['instructor'] is Map
-                                          ? (course['instructor']
-                                                      as Map)['name']
-                                                  ?.toString() ??
-                                              ''
+                                          ? context.localizedApiText(
+                                              Map<String, dynamic>.from(
+                                                course['instructor'] as Map,
+                                              ),
+                                              'name',
+                                            )
                                           : course['instructor']?.toString() ??
                                               '',
                                       style: GoogleFonts.cairo(

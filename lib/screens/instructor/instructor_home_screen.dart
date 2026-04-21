@@ -6,6 +6,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../widgets/instructor_bottom_nav.dart';
 import '../../services/profile_service.dart';
@@ -1420,13 +1421,14 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen>
 
     return Column(
       children: _myCourses.take(5).map((c) {
-        final title = c['title']?.toString() ?? '';
+        final title = context.localizedApiText(c, 'title');
         final level =
             c['level']?.toString() ?? c['levelName']?.toString() ?? '';
         final category = c['category'] is Map
-            ? (c['category'] as Map)['name']?.toString() ??
-                (c['category'] as Map)['nameAr']?.toString() ??
-                ''
+            ? context.localizedApiText(
+                Map<String, dynamic>.from(c['category'] as Map),
+                'name',
+              )
             : c['categoryName']?.toString() ?? c['category']?.toString() ?? '';
         final price = (c['price'] as num?)?.toDouble();
         final durationRaw =

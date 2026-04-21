@@ -6,6 +6,8 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_text_styles.dart';
 import '../../core/design/app_radius.dart';
 import '../../core/localization/localization_helper.dart';
+import '../../core/navigation/route_names.dart';
+import '../../core/notification_service/notification_service.dart';
 import '../../services/notifications_service.dart';
 
 /// Notifications Screen - Connected to API
@@ -20,6 +22,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _notifications = [];
   int _unreadCount = 0;
+
+  void _handleBackNavigation() {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(RouteNames.home);
+  }
 
   @override
   void initState() {
@@ -150,6 +160,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  Future<void> _onNotificationTap(Map<String, dynamic> notification) async {
+    final notificationId = notification['id']?.toString();
+    if (notificationId != null) {
+      await _markAsRead(notificationId);
+    }
+
+    final data = <String, dynamic>{
+      if (notification['route'] != null) 'route': notification['route'],
+      if (notification['target_route'] != null)
+        'target_route': notification['target_route'],
+      if (notification['action_type'] != null)
+        'action_type': notification['action_type'],
+      if (notification['action_value'] != null)
+        'action_value': notification['action_value'],
+      if (notification['target_screen'] != null)
+        'target_screen': notification['target_screen'],
+      if (notification['target'] != null) 'target': notification['target'],
+    };
+
+    await FirebaseNotification.handleNotificationTapData(data);
+  }
+
   Future<void> _markAllAsRead() async {
     try {
       await NotificationsService.instance.markAllAsRead();
@@ -246,259 +278,245 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            // Header - Purple gradient like Home
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colorScheme.primary,
-                    Color.lerp(colorScheme.primary, colorScheme.shadow, 0.32)!,
-                  ],
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(AppRadius.largeCard),
-                  bottomRight: Radius.circular(AppRadius.largeCard),
-                ),
-              ),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 16, // pt-4
-                bottom: 32, // pb-8
-                left: 16, // px-4
-                right: 16,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Back button and title - matches React: gap-4 mb-4
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: Container(
-                          width: 40, // w-10
-                          height: 40, // h-10
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white,
-                            size: 20, // w-5 h-5
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16), // gap-4
-                      Text(
-                        context.l10n.notificationsTitle,
-                        style: AppTextStyles.h3(color: Colors.white),
-                      ),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              // Header - Purple gradient like Home
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primary,
+                      Color.lerp(
+                          colorScheme.primary, colorScheme.shadow, 0.32)!,
                     ],
                   ),
-                  const SizedBox(height: 16), // mb-4
-                  // Notification count - matches React: gap-2
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.notifications,
-                        size: 20, // w-5 h-5
-                        color: Colors.white.withOpacity(0.7), // white/70
-                      ),
-                      const SizedBox(width: 8), // gap-2
-                      Text(
-                        context.l10n.newNotificationsCount(
-                          _unreadCount > 0
-                              ? _unreadCount
-                              : _newNotifications.length,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(AppRadius.largeCard),
+                    bottomRight: Radius.circular(AppRadius.largeCard),
+                  ),
+                ),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 16, // pt-4
+                  bottom: 32, // pb-8
+                  left: 16, // px-4
+                  right: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Back button and title - matches React: gap-4 mb-4
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _handleBackNavigation,
+                          child: Container(
+                            width: 40, // w-10
+                            height: 40, // h-10
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white,
+                              size: 20, // w-5 h-5
+                            ),
+                          ),
                         ),
-                        style: AppTextStyles.bodyMedium(
+                        const SizedBox(width: 16), // gap-4
+                        Text(
+                          context.l10n.notificationsTitle,
+                          style: AppTextStyles.h3(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16), // mb-4
+                    // Notification count - matches React: gap-2
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.notifications,
+                          size: 20, // w-5 h-5
                           color: Colors.white.withOpacity(0.7), // white/70
                         ),
-                      ),
-                      const Spacer(),
-                      // Mark all as read button
-                      if (_newNotifications.isNotEmpty)
-                        GestureDetector(
-                          onTap: _markAllAsRead,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              context.l10n.markAllAsRead,
-                              style: GoogleFonts.cairo(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                        const SizedBox(width: 8), // gap-2
+                        Text(
+                          context.l10n.newNotificationsCount(
+                            _unreadCount > 0
+                                ? _unreadCount
+                                : _newNotifications.length,
+                          ),
+                          style: AppTextStyles.bodyMedium(
+                            color: Colors.white.withOpacity(0.7), // white/70
+                          ),
+                        ),
+                        const Spacer(),
+                        // Mark all as read button
+                        if (_newNotifications.isNotEmpty)
+                          GestureDetector(
+                            onTap: _markAllAsRead,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                context.l10n.markAllAsRead,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content - matches React: px-4 -mt-4 space-y-6
+              Transform.translate(
+                offset: const Offset(0, -16), // -mt-4
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16), // px-4
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_isLoading) _buildNotificationsSkeleton(context),
+                      if (!_isLoading) ...[
+                        const SizedBox(height: 24), // space-y-6
+
+                        // New Notifications section
+                        if (_newNotifications.isNotEmpty) ...[
+                          Text(
+                            context.l10n.newSection,
+                            style: AppTextStyles.bodySmall(
+                              color: colorScheme.onSurface,
+                            ).copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12), // mb-3
+                          ..._newNotifications.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final notification = entry.value;
+                            return TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0.0, end: 1.0),
+                              duration:
+                                  Duration(milliseconds: 400 + (index * 100)),
+                              curve: Curves.easeOut,
+                              builder: (context, value, child) {
+                                return Transform.translate(
+                                  offset: Offset(0, 20 * (1 - value)),
+                                  child: Opacity(
+                                    opacity: value,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: GestureDetector(
+                                onTap: () {
+                                  _onNotificationTap(notification);
+                                },
+                                child: _buildNotificationCard(
+                                    context, notification,
+                                    isNew: true),
+                              ),
+                            );
+                          }),
+                        ],
+
+                        const SizedBox(height: 24), // space-y-6
+
+                        // Read Notifications section
+                        if (_readNotifications.isNotEmpty) ...[
+                          Text(
+                            context.l10n.past,
+                            style: AppTextStyles.bodySmall(
+                              color: colorScheme.onSurface,
+                            ).copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12), // mb-3
+                          ..._readNotifications.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final notification = entry.value;
+                            return TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0.0, end: 1.0),
+                              duration: Duration(
+                                milliseconds: 400 +
+                                    ((_newNotifications.length + index) * 100),
+                              ),
+                              curve: Curves.easeOut,
+                              builder: (context, value, child) {
+                                return Transform.translate(
+                                  offset: Offset(0, 20 * (1 - value)),
+                                  child: Opacity(
+                                    opacity: value,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: _buildNotificationCard(
+                                  context, notification,
+                                  isNew: false),
+                            );
+                          }),
+                        ],
+
+                        // Empty state - matches React
+                        if (_notifications.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 80),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 96, // w-24
+                                  height: 96, // h-24
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary
+                                        .withValues(alpha: 0.16),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.notifications,
+                                    size: 48, // w-12 h-12
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 16), // mb-4
+                                Text(
+                                  context.l10n.noNotifications,
+                                  style: AppTextStyles.h4(
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 8), // mb-2
+                                Text(
+                                  context.l10n.newNotificationsWillAppear,
+                                  style: AppTextStyles.bodyMedium(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        const SizedBox(height: 32),
+                      ],
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-
-            // Content - matches React: px-4 -mt-4 space-y-6
-            Expanded(
-              child: Transform.translate(
-                offset: const Offset(0, -16), // -mt-4
-                child: _isLoading
-                    ? _buildNotificationsSkeleton(context)
-                    : SingleChildScrollView(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16), // px-4
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 24), // space-y-6
-
-                            // New Notifications section
-                            if (_newNotifications.isNotEmpty) ...[
-                              Text(
-                                context.l10n.newSection,
-                                style: AppTextStyles.bodySmall(
-                                  color: colorScheme.onSurface,
-                                ).copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 12), // mb-3
-                              ..._newNotifications.asMap().entries.map((entry) {
-                                final index = entry.key;
-                                final notification = entry.value;
-                                return TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: Duration(
-                                      milliseconds: 400 + (index * 100)),
-                                  curve: Curves.easeOut,
-                                  builder: (context, value, child) {
-                                    return Transform.translate(
-                                      offset: Offset(0, 20 * (1 - value)),
-                                      child: Opacity(
-                                        opacity: value,
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      final notificationId =
-                                          notification['id']?.toString();
-                                      if (notificationId != null) {
-                                        _markAsRead(notificationId);
-                                      }
-                                      // Handle navigation if action_type exists
-                                      final actionValue =
-                                          notification['action_value'];
-                                      if (actionValue != null && mounted) {
-                                        // Navigate based on action_value
-                                        // You can implement navigation logic here
-                                      }
-                                    },
-                                    child: _buildNotificationCard(
-                                        context, notification,
-                                        isNew: true),
-                                  ),
-                                );
-                              }),
-                            ],
-
-                            const SizedBox(height: 24), // space-y-6
-
-                            // Read Notifications section
-                            if (_readNotifications.isNotEmpty) ...[
-                              Text(
-                                context.l10n.past,
-                                style: AppTextStyles.bodySmall(
-                                  color: colorScheme.onSurface,
-                                ).copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 12), // mb-3
-                              ..._readNotifications
-                                  .asMap()
-                                  .entries
-                                  .map((entry) {
-                                final index = entry.key;
-                                final notification = entry.value;
-                                return TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: Duration(
-                                    milliseconds: 400 +
-                                        ((_newNotifications.length + index) *
-                                            100),
-                                  ),
-                                  curve: Curves.easeOut,
-                                  builder: (context, value, child) {
-                                    return Transform.translate(
-                                      offset: Offset(0, 20 * (1 - value)),
-                                      child: Opacity(
-                                        opacity: value,
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: _buildNotificationCard(
-                                      context, notification,
-                                      isNew: false),
-                                );
-                              }),
-                            ],
-
-                            // Empty state - matches React
-                            if (_notifications.isEmpty)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 80),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 96, // w-24
-                                      height: 96, // h-24
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary
-                                            .withValues(alpha: 0.16),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.notifications,
-                                        size: 48, // w-12 h-12
-                                        color: colorScheme.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16), // mb-4
-                                    Text(
-                                      context.l10n.noNotifications,
-                                      style: AppTextStyles.h4(
-                                        color: colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8), // mb-2
-                                    Text(
-                                      context.l10n.newNotificationsWillAppear,
-                                      style: AppTextStyles.bodyMedium(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                            const SizedBox(height: 32),
-                          ],
-                        ),
-                      ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

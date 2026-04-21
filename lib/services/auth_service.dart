@@ -26,6 +26,79 @@ class AuthService {
 
   static final AuthService instance = AuthService._();
 
+  String _extractServerMessage(dynamic error, String fallback) {
+    try {
+      String raw = '';
+      if (error is ApiException) {
+        raw = error.responseBody?.trim().isNotEmpty == true
+            ? error.responseBody!.trim()
+            : error.message;
+      } else {
+        raw = error?.toString() ?? '';
+      }
+
+      final match = RegExp(r'\{.*\}', dotAll: true).firstMatch(raw);
+      if (match != null) {
+        final errorJson = jsonDecode(match.group(0)!);
+        final errors = errorJson['errors'];
+        if (errors is Map) {
+          for (final value in errors.values) {
+            if (value is String && value.trim().isNotEmpty) {
+              return value.trim();
+            }
+            if (value is List && value.isNotEmpty) {
+              final first = value.first?.toString() ?? '';
+              if (first.trim().isNotEmpty) {
+                return first.trim();
+              }
+            }
+          }
+        }
+
+        final parsed = (errorJson['message'] ?? errorJson['error'])?.toString();
+        if (parsed != null && parsed.trim().isNotEmpty) {
+          return parsed.trim();
+        }
+      }
+      if (raw.trim().isNotEmpty) {
+        return raw.trim();
+      }
+    } catch (_) {}
+    return fallback;
+  }
+
+  bool isMissingEmailVerifiedTokenError(dynamic error) {
+    try {
+      String raw = '';
+      if (error is ApiException) {
+        raw = error.responseBody?.trim().isNotEmpty == true
+            ? error.responseBody!.trim()
+            : error.message;
+      } else {
+        raw = error?.toString() ?? '';
+      }
+
+      final match = RegExp(r'\{.*\}', dotAll: true).firstMatch(raw);
+      if (match == null) return false;
+      final errorJson = jsonDecode(match.group(0)!);
+      final errors = errorJson['errors'];
+      if (errors is! Map) return false;
+
+      final tokenError = errors['email_verified_token'];
+      if (tokenError is String && tokenError.trim().isNotEmpty) {
+        final hasOtherErrors = errors.entries.any((entry) {
+          if (entry.key == 'email_verified_token') return false;
+          final value = entry.value;
+          if (value is String) return value.trim().isNotEmpty;
+          if (value is List) return value.isNotEmpty;
+          return value != null;
+        });
+        return !hasOtherErrors;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   bool _isEmailNotVerifiedMessage(String message) {
     final normalized = message.toLowerCase();
     return normalized.contains('confirm') ||
@@ -41,6 +114,7 @@ class AuthService {
     required String deviceId,
     required String emailOrPhone,
     required String password,
+    String? fcmToken,
   }) async {
     try {
       // Determine if input is email or phone
@@ -51,10 +125,24 @@ class AuthService {
         'password': password,
       };
 
-      // If backend enables device restriction, it expects deviceFingerprint (max 255).
-      // Use deviceId as a stable fingerprint.
-      if (deviceId.trim().isNotEmpty) {
-        requestBody['deviceFingerprint'] = deviceId.trim();
+      // Backend expects a fingerprint value for device restriction.
+      // Use FCM token as the fingerprint (fallback to deviceId if unavailable).
+      String? fingerprint = (fcmToken != null && fcmToken.trim().isNotEmpty)
+          ? fcmToken.trim()
+          : FirebaseNotification.fcmToken;
+      if (fingerprint == null || fingerprint.trim().isEmpty) {
+        await FirebaseNotification.getFcmToken();
+        fingerprint = FirebaseNotification.fcmToken;
+      }
+      final resolvedFingerprint =
+          (fingerprint != null && fingerprint.trim().isNotEmpty)
+              ? fingerprint.trim()
+              : deviceId.trim();
+      if (resolvedFingerprint.isNotEmpty) {
+        requestBody['deviceFingerprint'] = resolvedFingerprint;
+      }
+      if (fingerprint != null && fingerprint.trim().isNotEmpty) {
+        requestBody['fcm_token'] = fingerprint.trim();
       }
 
       final response = await ApiClient.instance.post(
@@ -172,26 +260,26 @@ class AuthService {
     }
 
     final data = response['data'] as Map<String, dynamic>?;
-    final verificationToken = data?['verificationToken']?.toString() ?? '';
-    if (verificationToken.isEmpty) {
-      throw Exception('تعذر الحصول على رمز التحقق المؤقت');
-    }
-    return verificationToken;
+    return data?['verificationToken']?.toString() ?? '';
   }
 
-  /// Verify email code and return verified token
+  /// Verify email code and return backend success message
   Future<String> verifyRegisterEmailCode({
     required String email,
     required String code,
-    required String verificationToken,
+    String? verificationToken,
   }) async {
+    final body = <String, dynamic>{
+      'email': email.trim(),
+      'code': code.trim(),
+    };
+    if (verificationToken != null && verificationToken.trim().isNotEmpty) {
+      body['verificationToken'] = verificationToken.trim();
+    }
+
     final response = await ApiClient.instance.post(
       ApiEndpoints.registerVerifyCode,
-      body: {
-        'email': email.trim(),
-        'code': code.trim(),
-        'verificationToken': verificationToken,
-      },
+      body: body,
       requireAuth: false,
     );
 
@@ -199,12 +287,11 @@ class AuthService {
       throw Exception(response['message'] ?? 'رمز التحقق غير صحيح');
     }
 
-    final data = response['data'] as Map<String, dynamic>?;
-    final verifiedToken = data?['verifiedToken']?.toString() ?? '';
-    if (verifiedToken.isEmpty) {
-      throw Exception('تعذر الحصول على رمز التأكيد النهائي');
+    final message = response['message']?.toString().trim() ?? '';
+    if (message.isNotEmpty) {
+      return message;
     }
-    return verifiedToken;
+    return 'تم تأكيد البريد الإلكتروني وتفعيل الحساب بنجاح';
   }
 
   /// Complete register user after email verification
@@ -224,7 +311,8 @@ class AuthService {
     required String deviceName,
     required String platform,
     String? fcmToken,
-    required String emailVerifiedToken,
+    String? emailVerifiedToken,
+    String? avatar,
   }) async {
     try {
       // Normalize WhatsApp number to +20XXXXXXXXXX format if possible
@@ -239,6 +327,10 @@ class AuthService {
         }
       }
 
+      // Keep device_id as a stable device identifier (not FCM token),
+      // because some backends validate device_id format/length strictly.
+      final resolvedRegistrationFingerprint = deviceId.trim();
+
       // Build request body
       final body = <String, dynamic>{
         'name': name,
@@ -247,11 +339,14 @@ class AuthService {
         'confirmPassword': passwordConfirmation,
         'accept_terms': acceptTerms,
         'role': role,
-        'device_id': deviceId,
+        'device_id': resolvedRegistrationFingerprint,
         'device_name': deviceName,
         'platform': platform,
-        'email_verified_token': emailVerifiedToken,
       };
+
+      if (emailVerifiedToken != null && emailVerifiedToken.trim().isNotEmpty) {
+        body['email_verified_token'] = emailVerifiedToken.trim();
+      }
 
       // Add phone if provided
       if (phone != null && phone.isNotEmpty) {
@@ -291,11 +386,38 @@ class AuthService {
         body['fcm_token'] = fcmToken;
       }
 
-      final response = await ApiClient.instance.post(
-        ApiEndpoints.register,
-        body: body,
-        requireAuth: false, // Register doesn't need auth
-      );
+      // Add avatar image URL/path if provided
+      if (avatar != null && avatar.trim().isNotEmpty) {
+        body['avatar'] = avatar.trim();
+      }
+
+      Future<Map<String, dynamic>> sendRegisterRequest(
+        Map<String, dynamic> requestBody,
+      ) {
+        return ApiClient.instance.post(
+          ApiEndpoints.register,
+          body: requestBody,
+          requireAuth: false, // Register doesn't need auth
+        );
+      }
+
+      Map<String, dynamic> response;
+      try {
+        response = await sendRegisterRequest(body);
+      } catch (e) {
+        final hasAvatar = body['avatar'] != null;
+        final normalizedError = e.toString().toLowerCase();
+        final looksLikeGenericInvalidData =
+            normalizedError.contains('invalid data provided') ||
+                normalizedError.contains('تأكد من صحة الحقول');
+        if (hasAvatar && looksLikeGenericInvalidData) {
+          final fallbackBody = Map<String, dynamic>.from(body)
+            ..remove('avatar');
+          response = await sendRegisterRequest(fallbackBody);
+        } else {
+          rethrow;
+        }
+      }
 
       // Print full response for debugging
       if (kDebugMode) {
@@ -317,19 +439,10 @@ class AuthService {
       }
     } catch (e) {
       if (e is ApiException) {
-        // Try to parse error message from response body
-        try {
-          final errorBody = e.message;
-          final match = RegExp(r'\{.*\}').firstMatch(errorBody);
-          if (match != null) {
-            final errorJson = jsonDecode(match.group(0)!);
-            final message = errorJson['message'] ??
-                errorJson['error'] ??
-                'Registration failed';
-            throw Exception(message);
-          }
-        } catch (_) {}
-        throw Exception('فشل إنشاء الحساب. يرجى المحاولة مرة أخرى');
+        throw Exception(_extractServerMessage(
+          e,
+          'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى',
+        ));
       }
       rethrow;
     }

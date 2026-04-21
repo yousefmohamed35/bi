@@ -20,7 +20,6 @@ import '../../screens/instructor/instructor_session_details_screen.dart';
 import '../../screens/instructor/instructor_scan_qr_screen.dart';
 import '../../screens/secondary/categories_screen.dart';
 import '../../screens/secondary/course_details_screen.dart';
-import '../../screens/secondary/lesson_viewer_screen.dart';
 import '../../screens/secondary/exams_screen.dart';
 import '../../screens/secondary/my_exams_screen.dart';
 import '../../screens/secondary/notifications_screen.dart';
@@ -40,6 +39,7 @@ import '../../screens/secondary/teachers_screen.dart';
 import '../../screens/secondary/teacher_details_screen.dart';
 import '../../screens/secondary/chat_conversations_screen.dart';
 import '../../screens/secondary/chat_messages_screen.dart';
+import '../../widgets/global_pull_to_refresh.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -248,33 +248,6 @@ class AppRouter {
         ),
       ),
       GoRoute(
-        path: RouteNames.lessonViewer,
-        pageBuilder: (context, state) {
-          final extra = state.extra;
-          Map<String, dynamic>? lesson;
-          String? courseId;
-
-          if (extra is Map<String, dynamic>) {
-            // Check if it's a wrapper map with lesson and courseId
-            if (extra.containsKey('lesson')) {
-              lesson = extra['lesson'] as Map<String, dynamic>?;
-              courseId = extra['courseId']?.toString();
-            } else {
-              // It's the lesson object itself
-              lesson = extra;
-            }
-          }
-
-          return _buildPageWithTransition(
-            key: state.pageKey,
-            child: LessonViewerScreen(
-              lesson: lesson,
-              courseId: courseId,
-            ),
-          );
-        },
-      ),
-      GoRoute(
         path: RouteNames.exams,
         pageBuilder: (context, state) => _buildPageWithTransition(
           key: state.pageKey,
@@ -327,7 +300,7 @@ class AppRouter {
       ),
       GoRoute(
         path: RouteNames.enrolled,
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => _buildStablePage(
           key: state.pageKey,
           child: const EnrolledScreen(),
         ),
@@ -424,7 +397,7 @@ class AppRouter {
   }) {
     return CustomTransitionPage<void>(
       key: key,
-      child: child,
+      child: GlobalPullToRefresh(child: child),
       transitionsBuilder: (
         BuildContext context,
         Animation<double> animation,
@@ -452,6 +425,19 @@ class AppRouter {
         );
       },
       transitionDuration: const Duration(milliseconds: 300),
+    );
+  }
+
+  /// Stable page without custom transition / global refresh wrapper.
+  /// Use this when a screen has complex semantics/scroll trees that may
+  /// conflict with animated route transitions.
+  static Page<void> _buildStablePage({
+    required LocalKey key,
+    required Widget child,
+  }) {
+    return NoTransitionPage<void>(
+      key: key,
+      child: child,
     );
   }
 }

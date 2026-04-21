@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/navigation/route_names.dart';
+import '../../core/notification_service/notification_service.dart';
 import '../../services/auth_service.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -33,10 +34,17 @@ class _LoginScreenState extends State<LoginScreen> {
         // Build device info for login
         final deviceId = await _getOrCreateDeviceId();
 
+        if (FirebaseNotification.fcmToken == null ||
+            FirebaseNotification.fcmToken!.trim().isEmpty) {
+          await FirebaseNotification.getFcmToken();
+        }
+        final fcmToken = FirebaseNotification.fcmToken;
+
         final authResponse = await AuthService.instance.login(
           emailOrPhone: _emailOrPhoneController.text.trim(),
           password: _passwordController.text,
           deviceId: deviceId,
+          fcmToken: fcmToken,
         );
 
         if (!mounted) return;

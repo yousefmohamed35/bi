@@ -286,19 +286,33 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          Column(
-            children: [
-              // Header
-              _buildHeader(context, enrolledCourses, certificates, totalHours),
-
-              // Content
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
-                        physics: const BouncingScrollPhysics(),
+          _isLoading
+              ? SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      _buildHeader(
+                          context, enrolledCourses, certificates, totalHours),
+                      const Padding(
+                        padding: EdgeInsets.only(top: 32),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      const SizedBox(height: 140),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 140),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      // Header now scrolls with the page
+                      _buildHeader(
+                          context, enrolledCourses, certificates, totalHours),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -388,9 +402,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                           ],
                         ),
                       ),
-              ),
-            ],
-          ),
+                    ],
+                  ),
+                ),
 
           // Bottom Navigation
           const BottomNav(activeTab: 'dashboard'),

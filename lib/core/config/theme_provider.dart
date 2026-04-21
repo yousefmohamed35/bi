@@ -15,7 +15,7 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   ThemeMode _themeMode = ThemeMode.system;
-  Locale _locale = const Locale('ar');
+  Locale _locale = const Locale('en');
 
   bool get isDarkMode => _themeMode == ThemeMode.dark;
   Locale get locale => _locale;
@@ -49,13 +49,13 @@ class ThemeProvider extends ChangeNotifier {
           _themeMode = ThemeMode.system;
         }
       }
-      final languageCode = prefs.getString(_languageKey) ?? 'ar';
+      final languageCode = prefs.getString(_languageKey) ?? 'en';
       _locale = Locale(languageCode);
       notifyListeners();
     } catch (e) {
       // Use defaults if loading fails
       _themeMode = ThemeMode.system;
-      _locale = const Locale('ar');
+      _locale = const Locale('en');
     }
   }
 
@@ -140,7 +140,7 @@ class ThemeProvider extends ChangeNotifier {
       case 'en':
         return 'English';
       default:
-        return 'العربية';
+        return 'English';
     }
   }
 }

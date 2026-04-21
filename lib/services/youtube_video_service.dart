@@ -1,4 +1,5 @@
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:dio/dio.dart';
 import '../core/services/download_manager.dart';
 
 class YoutubeVideoService {
@@ -11,6 +12,7 @@ class YoutubeVideoService {
     String youtubeUrl, {
     required Function(int progress) onProgress,
     String? fileName,
+    CancelToken? cancelToken,
   }) async {
     try {
       final video = await _yt.videos.get(youtubeUrl);
@@ -18,10 +20,6 @@ class YoutubeVideoService {
 
       // Pick highest MP4 progressive stream (video + audio)
       final streamInfo = manifest.muxed.withHighestBitrate();
-      if (streamInfo == null) {
-        print('❌ No muxed MP4 stream found for $youtubeUrl');
-        return null;
-      }
 
       final directUrl = streamInfo.url.toString();
       print('🎥 YouTube direct stream URL: $directUrl');
@@ -32,6 +30,7 @@ class YoutubeVideoService {
         name: fileName ?? 'yt_${video.id}.mp4',
         onDownload: onProgress,
         isOpen: false,
+        cancelToken: cancelToken,
       );
 
       return localPath;

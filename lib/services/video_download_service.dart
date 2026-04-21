@@ -1,11 +1,39 @@
 import 'dart:developer';
 import 'dart:io';
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import '../core/services/download_manager.dart';
 import '../models/download_model.dart';
 import '../services/token_storage_service.dart';
+
+enum DownloadTrackingStatus { inProgress, completed, failed, cancelled }
+
+class DownloadTrackingState {
+  final String lessonId;
+  final int progress;
+  final DownloadTrackingStatus status;
+
+  const DownloadTrackingState({
+    required this.lessonId,
+    required this.progress,
+    required this.status,
+  });
+}
+
+class _TrackedDownload {
+  int progress;
+  DownloadTrackingStatus status;
+  final Future<void> Function() onCancel;
+
+  _TrackedDownload({
+    required this.progress,
+    required this.status,
+    required this.onCancel,
+  });
+}
 
 class VideoDownloadService {
   static final VideoDownloadService _instance =
@@ -15,6 +43,9 @@ class VideoDownloadService {
 
   static Database? _database;
   static const String _tableName = 'downloaded_videos';
+  static final Map<String, _TrackedDownload> _trackedDownloads = {};
+  static final StreamController<DownloadTrackingState> _trackingController =
+      StreamController<DownloadTrackingState>.broadcast();
 
   // Initialize the download service
   Future<void> initialize() async {
@@ -73,6 +104,92 @@ class VideoDownloadService {
   /// See [requestPermission] — always allowed because downloads never use shared external storage.
   Future<bool> hasStoragePermission() async => true;
 
+  Stream<DownloadTrackingState> watchTrackedDownload(String lessonId) {
+    return _trackingController.stream
+        .where((state) => state.lessonId == lessonId);
+  }
+
+  DownloadTrackingState? getTrackedDownloadState(String lessonId) {
+    final task = _trackedDownloads[lessonId];
+    if (task == null) return null;
+    return DownloadTrackingState(
+      lessonId: lessonId,
+      progress: task.progress,
+      status: task.status,
+    );
+  }
+
+  void startTrackingDownload({
+    required String lessonId,
+    required Future<void> Function() onCancel,
+  }) {
+    _trackedDownloads[lessonId] = _TrackedDownload(
+      progress: 0,
+      status: DownloadTrackingStatus.inProgress,
+      onCancel: onCancel,
+    );
+    _trackingController.add(
+      DownloadTrackingState(
+        lessonId: lessonId,
+        progress: 0,
+        status: DownloadTrackingStatus.inProgress,
+      ),
+    );
+  }
+
+  void updateTrackedDownloadProgress(String lessonId, int progress) {
+    final task = _trackedDownloads[lessonId];
+    if (task == null || task.status != DownloadTrackingStatus.inProgress) {
+      return;
+    }
+
+    final safeProgress = progress.clamp(0, 100);
+    task.progress = safeProgress;
+    _trackingController.add(
+      DownloadTrackingState(
+        lessonId: lessonId,
+        progress: safeProgress,
+        status: DownloadTrackingStatus.inProgress,
+      ),
+    );
+  }
+
+  void completeTrackedDownload(String lessonId) {
+    _trackedDownloads.remove(lessonId);
+    _trackingController.add(
+      DownloadTrackingState(
+        lessonId: lessonId,
+        progress: 100,
+        status: DownloadTrackingStatus.completed,
+      ),
+    );
+  }
+
+  void failTrackedDownload(String lessonId) {
+    _trackedDownloads.remove(lessonId);
+    _trackingController.add(
+      DownloadTrackingState(
+        lessonId: lessonId,
+        progress: 0,
+        status: DownloadTrackingStatus.failed,
+      ),
+    );
+  }
+
+  Future<void> cancelTrackedDownload(String lessonId) async {
+    final task = _trackedDownloads.remove(lessonId);
+    if (task == null) return;
+
+    await task.onCancel();
+    _trackingController.add(
+      DownloadTrackingState(
+        lessonId: lessonId,
+        progress: task.progress,
+        status: DownloadTrackingStatus.cancelled,
+      ),
+    );
+  }
+
   /// تحميل فيديو باستخدام DownloadManager
   Future<String?> downloadVideoWithManager({
     required String videoUrl,
@@ -85,6 +202,7 @@ class VideoDownloadService {
     String? durationText,
     String? videoSource,
     Function(int progress)? onProgress,
+    CancelToken? cancelToken,
   }) async {
     try {
       print('🎬 Starting video download with DownloadManager');
@@ -114,6 +232,7 @@ class VideoDownloadService {
         },
         isOpen: false,
         authToken: token,
+        cancelToken: cancelToken,
       );
 
       if (localPath != null) {

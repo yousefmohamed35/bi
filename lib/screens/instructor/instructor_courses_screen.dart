@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../core/api/api_endpoints.dart';
 import '../../widgets/instructor_bottom_nav.dart';
@@ -58,11 +59,13 @@ class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
     if (_searchQuery.trim().isEmpty) return _courses;
     final q = _searchQuery.trim().toLowerCase();
     return _courses.where((c) {
-      final title = c['title']?.toString().toLowerCase() ?? '';
+      final title = context.localizedApiText(c, 'title').toLowerCase();
       final category = c['category'] is Map
-          ? ((c['category'] as Map)['name']?.toString() ??
-                  (c['category'] as Map)['nameAr']?.toString() ??
-                  '')
+          ? context
+              .localizedApiText(
+                Map<String, dynamic>.from(c['category'] as Map),
+                'name',
+              )
               .toLowerCase()
           : (c['categoryName']?.toString() ?? c['category']?.toString() ?? '')
               .toLowerCase();
@@ -687,15 +690,16 @@ class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
   }
 
   Widget _buildCourseCard(Map<String, dynamic> c, bool isAr) {
-    final title = c['title']?.toString() ?? '';
+    final title = context.localizedApiText(c, 'title');
     final level = c['level']?.toString() ?? c['levelName']?.toString() ?? '';
     final rawStatus =
         (c['status'] ?? c['courseStatus'] ?? c['state'])?.toString() ?? '';
     final status = rawStatus.toLowerCase();
     final category = c['category'] is Map
-        ? (c['category'] as Map)['name']?.toString() ??
-            (c['category'] as Map)['nameAr']?.toString() ??
-            ''
+        ? context.localizedApiText(
+            Map<String, dynamic>.from(c['category'] as Map),
+            'name',
+          )
         : c['categoryName']?.toString() ?? c['category']?.toString() ?? '';
     final price = (c['price'] as num?)?.toDouble();
     final isFreeFlag =

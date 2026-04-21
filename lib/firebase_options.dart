@@ -50,19 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAxFMoc3XRlkB2q48wA6RMFUJ1guzJzplU',
-    appId: '1:134644525634:android:7ab309e0ec7c3e2c879bdb',
-    messagingSenderId: '134644525634',
-    projectId: 'anmka-stp',
-    storageBucket: 'anmka-stp.firebasestorage.app',
+    apiKey: 'AIzaSyAvk_xXO7T6M99kmOOAmqr6HI9XzVpw7eo',
+    appId: '1:756911591241:android:00b9fb3b7af6171ba65498',
+    messagingSenderId: '756911591241',
+    projectId: 'bimaristan-b03be',
+    storageBucket: 'bimaristan-b03be.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDRwnalNK21IACz3-NKvITk2M0MYKlMa1w',
-    appId: '1:134644525634:ios:d772218680f97b04879bdb',
-    messagingSenderId: '134644525634',
-    projectId: 'anmka-stp',
-    storageBucket: 'anmka-stp.firebasestorage.app',
+    apiKey: 'AIzaSyBa_QmoLhx_u5kMVjN4WWBRBn4UgY_Xrq8',
+    appId: '1:756911591241:ios:fb59f9bf2d096275a65498',
+    messagingSenderId: '756911591241',
+    projectId: 'bimaristan-b03be',
+    storageBucket: 'bimaristan-b03be.firebasestorage.app',
     iosBundleId: 'com.anmka.stpnew',
   );
+
 }

@@ -78,7 +78,7 @@ class ExamsService {
   Future<Map<String, dynamic>> getMyExams() async {
     try {
       final response = await ApiClient.instance.get(
-        ApiEndpoints.exams,
+        ApiEndpoints.myExamResults,
         requireAuth: true,
       );
 

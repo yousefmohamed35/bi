@@ -9,14 +9,35 @@ class UploadService {
   static final UploadService instance = UploadService._();
 
   /// Upload an image. Returns URL path (e.g. /uploads/images/xxx.jpg) for use as thumbnail.
-  Future<String> uploadImage(File file) async {
+  Future<String> uploadImage(
+    File file, {
+    bool requireAuth = true,
+  }) async {
     try {
-      final response = await ApiClient.instance.postMultipart(
-        ApiEndpoints.upload,
-        fields: {'type': 'image'},
-        files: {'image': file},
-        requireAuth: true,
-      );
+      Map<String, dynamic> response;
+      try {
+        response = await ApiClient.instance.postMultipart(
+          ApiEndpoints.upload,
+          fields: {'type': 'image'},
+          files: {'image': file},
+          requireAuth: requireAuth,
+        );
+      } catch (firstError) {
+        final errorText = firstError.toString().toLowerCase();
+        final isUnsupportedType = errorText.contains('نوع الملف غير مدعوم') ||
+            errorText.contains('unsupported') ||
+            errorText.contains('mime');
+        if (!isUnsupportedType) {
+          rethrow;
+        }
+        // Some backends expect the upload field to be "file" instead of "image".
+        response = await ApiClient.instance.postMultipart(
+          ApiEndpoints.upload,
+          fields: {'type': 'image'},
+          files: {'file': file},
+          requireAuth: requireAuth,
+        );
+      }
       // API may return { success, url } or { success, data: { url } }
       final url = response['url']?.toString() ??
           (response['data'] is Map

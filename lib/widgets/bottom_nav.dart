@@ -25,9 +25,9 @@ class BottomNav extends StatelessWidget {
     final centerGap = isCompact ? 2.0 : 4.0;
 
     return Positioned(
-      bottom: 0,
       left: 0,
       right: 0,
+      bottom: 0,
       child: Container(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).padding.bottom + 16,
@@ -115,7 +115,7 @@ class BottomNav extends StatelessWidget {
                           id: 'enrolled',
                           activeTab: activeTab,
                           isCompact: isCompact,
-                          onTap: () => context.push(RouteNames.enrolled),
+                          onTap: () => context.go(RouteNames.enrolled),
                         ),
                       ),
                       Expanded(

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/app_radius.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../data/sample_teachers.dart';
 import '../../l10n/app_localizations.dart';
@@ -193,7 +194,7 @@ class _TeacherDetailsScreenState extends State<TeacherDetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _teacher['name']?.toString() ?? '',
+                                    context.localizedApiText(_teacher, 'name'),
                                     style: GoogleFonts.cairo(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w800,
@@ -202,7 +203,7 @@ class _TeacherDetailsScreenState extends State<TeacherDetailsScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    _teacher['title']?.toString() ?? '',
+                                    context.localizedApiText(_teacher, 'title'),
                                     style: GoogleFonts.cairo(
                                       fontSize: 13,
                                       color: AppColors.mutedForeground,
@@ -353,7 +354,10 @@ class _TeacherDetailsScreenState extends State<TeacherDetailsScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        course['title']?.toString() ?? '',
+                                        context.localizedApiText(
+                                          course,
+                                          'title',
+                                        ),
                                         style: GoogleFonts.cairo(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w800,

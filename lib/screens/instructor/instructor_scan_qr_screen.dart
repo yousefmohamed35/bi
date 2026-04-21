@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/design/app_colors.dart';
+import '../../core/localization/localization_helper.dart';
 import '../../core/navigation/route_names.dart';
 import '../../services/profile_service.dart';
 import '../../services/teacher_dashboard_service.dart';
@@ -235,7 +236,8 @@ class _InstructorScanQrScreenState extends State<InstructorScanQrScreen> {
                     ),
                     items: _courses.map((c) {
                       final id = c['id']?.toString() ?? '';
-                      final title = c['title']?.toString() ?? id;
+                      final title =
+                          context.localizedApiText(c, 'title', fallback: id);
                       return DropdownMenuItem<String>(
                         value: id,
                         child: Text(

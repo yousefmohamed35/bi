@@ -109,37 +109,40 @@ class _CenterAttendanceScreenState extends State<CenterAttendanceScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header with Profile and Stats
-            _buildHeader(
-                context, l10n, enrolledCourses, certificates, totalHours),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          child: Column(
+            children: [
+              // Header with Profile and Stats now scrolls with page content.
+              _buildHeader(
+                  context, l10n, enrolledCourses, certificates, totalHours),
 
-            // Content
-            Expanded(
-              child: _isLoading || _isLoadingProfile
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          Text(
-                            l10n.loadingQrCode,
-                            style: GoogleFonts.cairo(
-                              fontSize: 14,
-                              color: AppColors.mutedForeground,
-                            ),
-                          ),
-                        ],
+              if (_isLoading || _isLoadingProfile)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  child: Column(
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.loadingQrCode,
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: AppColors.mutedForeground,
+                        ),
                       ),
-                    )
-                  : _error != null
-                      ? _buildErrorState(context, l10n)
-                      : _buildContent(context, l10n, enrolledCourses,
-                          certificates, totalHours),
-            ),
-          ],
+                    ],
+                  ),
+                )
+              else if (_error != null)
+                _buildErrorState(context, l10n)
+              else
+                _buildContent(
+                    context, l10n, enrolledCourses, certificates, totalHours),
+            ],
+          ),
         ),
       ),
     );
@@ -451,9 +454,8 @@ class _CenterAttendanceScreenState extends State<CenterAttendanceScreen> {
     int certificates,
     int totalHours,
   ) {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(24),
-      physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
           // Info Card
@@ -569,6 +571,7 @@ class _CenterAttendanceScreenState extends State<CenterAttendanceScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );

@@ -84,6 +84,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       body: SafeArea(
         top: false,
         child: Stack(
+          fit: StackFit.expand,
           children: [
             Container(
               constraints: const BoxConstraints(maxWidth: 400),

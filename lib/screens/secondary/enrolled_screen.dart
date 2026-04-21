@@ -165,8 +165,8 @@ class _EnrolledScreenState extends State<EnrolledScreen> {
     }
   }
 
-  void _handleOpenCourse(
-      BuildContext context, Map<String, dynamic> enrollment) {
+  Future<void> _handleOpenCourse(
+      BuildContext context, Map<String, dynamic> enrollment) async {
     // Extract course data from enrollment
     final course = enrollment['course'] as Map<String, dynamic>?;
     if (course == null) return;
@@ -182,7 +182,9 @@ class _EnrolledScreenState extends State<EnrolledScreen> {
           enrollment['total_lessons'] ?? course['lessons_count'] ?? 0,
       'is_enrolled': true,
     };
-    context.push(RouteNames.courseDetails, extra: courseData);
+    await context.push(RouteNames.courseDetails, extra: courseData);
+    if (!mounted) return;
+    await _loadEnrollments();
   }
 
   String _formatTimeAgo(BuildContext context, String? dateString) {
@@ -212,49 +214,45 @@ class _EnrolledScreenState extends State<EnrolledScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          Column(
-            children: [
-              // Header
-              _buildHeader(context),
-
-              // Content
-              Expanded(
-                child: _isLoading
-                    ? _buildLoadingState()
-                    : _enrolledCourses.isEmpty
-                        ? _buildEmptyState(context)
-                        : RefreshIndicator(
-                            onRefresh: _loadEnrollments,
-                            child: ListView.builder(
-                              padding:
-                                  const EdgeInsets.fromLTRB(20, 0, 20, 140),
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: _enrolledCourses.length,
-                              itemBuilder: (context, index) {
-                                final enrollment = _enrolledCourses[index];
-                                return TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: Duration(
-                                      milliseconds: 400 + (index * 100)),
-                                  curve: Curves.easeOut,
-                                  builder: (context, value, child) {
-                                    return Transform.translate(
-                                      offset: Offset(0, 20 * (1 - value)),
-                                      child: Opacity(
-                                        opacity: value,
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: _buildCourseCard(context, enrollment),
-                                );
-                              },
-                            ),
-                          ),
-              ),
-            ],
-          ),
+          _isLoading
+              ? SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      _buildHeader(context),
+                      _buildLoadingState(),
+                      const SizedBox(height: 140),
+                    ],
+                  ),
+                )
+              : _enrolledCourses.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        children: [
+                          _buildHeader(context),
+                          _buildEmptyState(context),
+                          const SizedBox(height: 140),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 140),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: _enrolledCourses.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return _buildHeader(context);
+                        }
+                        final enrollment = _enrolledCourses[index - 1];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: _buildCourseCard(context, enrollment),
+                        );
+                      },
+                    ),
           // Bottom Navigation
           const BottomNav(activeTab: 'enrolled'),
         ],
@@ -453,15 +451,21 @@ class _EnrolledScreenState extends State<EnrolledScreen> {
     final totalLessons = _parseInt(enrollment['total_lessons']) != 0
         ? _parseInt(enrollment['total_lessons'])
         : _parseInt(course['lessons_count']);
-    final courseTitle = course['title']?.toString() ?? '';
+    final courseTitle = context.localizedApiText(course, 'title');
     final instructor = course['instructor'] is Map
-        ? (course['instructor'] as Map)['name']?.toString() ?? ''
+        ? context.localizedApiText(
+            Map<String, dynamic>.from(course['instructor'] as Map),
+            'name',
+          )
         : course['instructor']?.toString() ?? '';
     final rating = _parseDouble(course['rating'], 0.0);
     final durationHours = _parseNum(course['duration_hours']);
     final thumbnail = course['thumbnail']?.toString();
     final category = course['category'] is Map
-        ? (course['category'] as Map)['name']?.toString() ?? ''
+        ? context.localizedApiText(
+            Map<String, dynamic>.from(course['category'] as Map),
+            'name',
+          )
         : course['category']?.toString() ?? '';
     final enrolledAt = enrollment['enrolled_at']?.toString();
     final colorScheme = Theme.of(context).colorScheme;
@@ -472,7 +476,7 @@ class _EnrolledScreenState extends State<EnrolledScreen> {
             : colorScheme.primary;
 
     return GestureDetector(
-      onTap: () => _handleOpenCourse(context, enrollment),
+      onTap: () async => _handleOpenCourse(context, enrollment),
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
@@ -839,20 +843,21 @@ class _EnrolledScreenState extends State<EnrolledScreen> {
   Widget _buildLoadingState() {
     return Skeletonizer(
       enabled: true,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 140),
-        itemCount: 3,
-        itemBuilder: (context, index) {
-          final cs = Theme.of(context).colorScheme;
-          return Container(
-            margin: const EdgeInsets.only(bottom: 20),
-            height: 280,
-            decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: BorderRadius.circular(28),
-            ),
-          );
-        },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+        child: Column(
+          children: List.generate(3, (index) {
+            final cs = Theme.of(context).colorScheme;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              height: 280,
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(28),
+              ),
+            );
+          }),
+        ),
       ),
     );
   }

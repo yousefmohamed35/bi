@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/localization/localization_helper.dart';
+import '../l10n/app_localizations.dart';
 
 /// Premium Course Card - Modern and Attractive Design
 class PremiumCourseCard extends StatelessWidget {
@@ -15,16 +17,23 @@ class PremiumCourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final isFree = course['is_free'] ?? course['isFree'] ?? false;
     final imagePath = course['thumbnail'] ?? course['image'] ?? '';
     final categoryName = course['category'] is Map
-        ? (course['category']?['name'] ?? '')
-        : (course['category'] ?? '');
-    final title = course['title'] ?? '';
+        ? context.localizedApiText(
+            Map<String, dynamic>.from(course['category'] as Map),
+            'name',
+          )
+        : (course['category'] ?? '').toString();
+    final title = context.localizedApiText(course, 'title');
     final instructorName = course['instructor'] is Map
-        ? (course['instructor']?['name'] ?? '')
-        : (course['instructor'] ?? '');
+        ? context.localizedApiText(
+            Map<String, dynamic>.from(course['instructor'] as Map),
+            'name',
+          )
+        : (course['instructor'] ?? '').toString();
     final rating = course['rating'] ?? 0.0;
     final hours = course['duration_hours'] ?? course['hours'] ?? 0;
     final lessons = course['lessons_count'] ?? course['lessons'] ?? 0;
@@ -166,8 +175,9 @@ class PremiumCourseCard extends StatelessWidget {
                     ),
                     child: Text(
                       isFree
-                          ? 'مجاني'
-                          : '${price is num ? price.toInt() : 0} ج.م',
+                          ? l10n.free
+                          : l10n
+                              .egyptianPound(price is num ? price.toInt() : 0),
                       style: GoogleFonts.cairo(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -288,7 +298,7 @@ class PremiumCourseCard extends StatelessWidget {
                           size: 14, color: colorScheme.onSurfaceVariant),
                       const SizedBox(width: 3),
                       Text(
-                        '$hoursس',
+                        '$hours${l10n.hourShort}',
                         style: GoogleFonts.cairo(
                             fontSize: 11, color: colorScheme.onSurfaceVariant),
                       ),
@@ -298,7 +308,7 @@ class PremiumCourseCard extends StatelessWidget {
                           size: 14, color: colorScheme.onSurfaceVariant),
                       const SizedBox(width: 3),
                       Text(
-                        '$lessons درس',
+                        l10n.lessonsCount(lessons is num ? lessons.toInt() : 0),
                         style: GoogleFonts.cairo(
                             fontSize: 11, color: colorScheme.onSurfaceVariant),
                       ),

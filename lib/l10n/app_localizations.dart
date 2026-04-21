@@ -62,8 +62,7 @@ import 'app_localizations_en.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,8 +70,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -84,8 +82,7 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -1406,6 +1403,18 @@ abstract class AppLocalizations {
   /// **'Review submitted successfully'**
   String get reviewSubmittedSuccessfully;
 
+  /// Shown when course reviews fail to load
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading reviews'**
+  String get errorLoadingReviews;
+
+  /// Shown when submitting a course review fails
+  ///
+  /// In en, this message translates to:
+  /// **'Error submitting review'**
+  String get errorSubmittingReview;
+
   /// Course feature label
   ///
   /// In en, this message translates to:
@@ -1525,6 +1534,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'points'**
   String get pointsLabel;
+
+  /// Total points label
+  ///
+  /// In en, this message translates to:
+  /// **'Total points'**
+  String get totalPointsLabel;
 
   /// Best score label
   ///
@@ -1657,6 +1672,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No questions available in exam'**
   String get noQuestionsAvailable;
+
+  /// Error when exam attempt identifier is not available
+  ///
+  /// In en, this message translates to:
+  /// **'Attempt ID is missing'**
+  String get attemptIdMissing;
 
   /// Finish Exam
   ///
@@ -1988,16 +2009,16 @@ abstract class AppLocalizations {
   /// **'Subscribe Now'**
   String get subscribeNowButton;
 
-  /// Enrolled Course
+  /// Course
   ///
   /// In en, this message translates to:
-  /// **'Enrolled Course'**
+  /// **'Course'**
   String get enrolledCourse;
 
-  /// Learning Hours
+  /// Hours
   ///
   /// In en, this message translates to:
-  /// **'Learning Hours'**
+  /// **'Hours'**
   String get learningHours;
 
   /// Continue Learning
@@ -2744,16 +2765,16 @@ abstract class AppLocalizations {
   /// **'Verification Link'**
   String get verificationLinkLabel;
 
-  /// Center Attendance
+  /// Attendance
   ///
   /// In en, this message translates to:
-  /// **'Center Attendance'**
+  /// **'Attendance'**
   String get centerAttendance;
 
-  /// Center attendance description
+  ///  attendance description
   ///
   /// In en, this message translates to:
-  /// **'Show this QR code at the center to mark your attendance'**
+  /// **'Show this QR code to mark your attendance'**
   String get centerAttendanceDescription;
 
   /// Loading QR code
@@ -2771,7 +2792,7 @@ abstract class AppLocalizations {
   /// Scan QR code instruction
   ///
   /// In en, this message translates to:
-  /// **'Show this QR code to the center staff to mark your attendance'**
+  /// **'Show this QR code to mark your attendance'**
   String get scanQrCodeInstruction;
 
   /// Refresh QR Code
@@ -2821,10 +2842,165 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} students'**
   String studentsCount(int count);
+
+  /// Course audio record player empty state
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load recording'**
+  String get unableToLoadRecord;
+
+  /// Course details accordion: video lessons subsection
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get courseLessonsSectionVideos;
+
+  /// Course details accordion: PDF lessons subsection
+  ///
+  /// In en, this message translates to:
+  /// **'PDFs'**
+  String get courseLessonsSectionPdfs;
+
+  /// Course details accordion: exam lessons subsection
+  ///
+  /// In en, this message translates to:
+  /// **'Exams'**
+  String get courseLessonsSectionExams;
+
+  /// Course details accordion: image lessons subsection
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get courseLessonsSectionImages;
+
+  /// Course details accordion: audio record lessons subsection
+  ///
+  /// In en, this message translates to:
+  /// **'Recordings'**
+  String get courseLessonsSectionRecords;
+
+  /// Fallback title when lesson has no image title
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get fallbackLessonImageTitle;
+
+  /// Fallback title when lesson has no audio title
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get fallbackLessonRecordTitle;
+
+  /// Fallback gallery title for image lessons
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get fallbackImagesGalleryTitle;
+
+  /// SnackBar when stream has no quality variants
+  ///
+  /// In en, this message translates to:
+  /// **'No video quality options available'**
+  String get noVideoQualityOptions;
+
+  /// SnackBar when only auto quality exists
+  ///
+  /// In en, this message translates to:
+  /// **'Only automatic quality is available for this video'**
+  String get onlyAutoQualityAvailable;
+
+  /// Bottom sheet title for quality picker
+  ///
+  /// In en, this message translates to:
+  /// **'Video quality'**
+  String get videoQualitySheetTitle;
+
+  /// Automatic video quality option label
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get videoQualityAuto;
+
+  /// Download error when lesson or course id missing
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot download this video'**
+  String get cannotDownloadVideoMissingIds;
+
+  /// Download error when URL missing
+  ///
+  /// In en, this message translates to:
+  /// **'No video link available to download'**
+  String get noVideoDownloadUrl;
+
+  /// Successful offline video download
+  ///
+  /// In en, this message translates to:
+  /// **'Video downloaded successfully'**
+  String get videoDownloadedSuccessfully;
+
+  /// Generic video download failure
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to download video'**
+  String get videoDownloadFailed;
+
+  /// Video download error with server or system message
+  ///
+  /// In en, this message translates to:
+  /// **'Error downloading video: {message}'**
+  String videoDownloadError(String message);
+
+  /// User cancelled an active download
+  ///
+  /// In en, this message translates to:
+  /// **'Download stopped'**
+  String get videoDownloadStopped;
+
+  /// Fallback title for a video lesson
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get defaultVideoLessonTitle;
+
+  /// Fallback course title when API title missing
+  ///
+  /// In en, this message translates to:
+  /// **'Course {courseId}'**
+  String defaultCourseTitleWithId(String courseId);
+
+  /// Inline player error state
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load video'**
+  String get videoPlayerLoadError;
+
+  /// Download progress overlay
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading: {percent}%'**
+  String downloadProgressPercent(int percent);
+
+  /// Cancel an in-progress download
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopDownloading;
+
+  /// SnackBar when image lesson has no URL
+  ///
+  /// In en, this message translates to:
+  /// **'No image available for this lesson'**
+  String get noImageForLesson;
+
+  /// SnackBar when audio lesson has no URL
+  ///
+  /// In en, this message translates to:
+  /// **'No recording available for this lesson'**
+  String get noRecordForLesson;
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -2833,25 +3009,25 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['ar', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['ar', 'en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'ar':
-      return AppLocalizationsAr();
-    case 'en':
-      return AppLocalizationsEn();
+    case 'ar': return AppLocalizationsAr();
+    case 'en': return AppLocalizationsEn();
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.'
+  );
 }

@@ -24,6 +24,7 @@ dependencies:
   google_fonts: ^7.0.0
   google_sign_in: ^6.2.2
   http: ^1.1.0
+  http_parser: ^4.1.2
   file_picker: ^8.1.4
   image_picker: ^1.0.7
   intl: ^0.20.2
